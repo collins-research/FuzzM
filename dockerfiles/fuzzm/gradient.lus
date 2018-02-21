@@ -1,0 +1,40 @@
+const x11 = -1;
+const y11 = 92;
+const x12 = 105;
+const y12 = 45;
+
+const x21 = 21;
+const y21 = 2;
+const x22 = 103;
+const y22 = 73;
+
+const x31 = 24;
+const y31 = 95;
+const x32 = 47;
+const y32 = 7;
+
+const xmin = -127;
+const xmax = 128;
+const ymin = -127;
+const ymax = 128;
+
+node main(x,y: int) returns ();
+var
+  bound1, bound2, bound3: bool;
+  bound123: bool;
+  not_bound123: bool;
+let
+
+  assert((xmin <= x) and (x <= xmax));
+  assert((ymin <= y) and (y <= ymax));
+
+  bound1 = (x12 - x11)*(y - y11) < (y12 - y11)*(x - x11);
+  bound2 = (x22 - x21)*(y - y21) > (y22 - y21)*(x - x21);
+  bound3 = (x32 - x31)*(y - y31) > (y32 - y31)*(x - x31);
+  bound123 =  (bound1  and      bound2  and      bound3) ;
+  not_bound123 = (not bound123);
+
+  --%PROPERTY bound123;
+  --%PROPERTY not_bound123;
+tel
+
