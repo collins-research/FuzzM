@@ -1,0 +1,15 @@
+version: '3'
+services:
+  fuzzm:
+    build:
+#       args:
+#       - proxy_host=<proxy_host>
+#       - proxy_port=<proxy_port>
+       context: .
+    image: fuzzm:latest
+    entrypoint:
+    - /bin/sh
+    - -c
+    - "mkdir -p /root/fuzzm/bin && chmod a+rwx /root/fuzzm/bin  && cp /usr/local/bin/fuzzm.jar /root/fuzzm/bin/. && chmod a+rwx /root/fuzzm/bin/fuzzm.jar"
+    volumes:
+    - ./fuzzm:/root/fuzzm

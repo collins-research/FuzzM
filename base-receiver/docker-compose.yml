@@ -1,0 +1,48 @@
+version: '3'
+services:
+  fuzzm:
+    image: fuzzm:latest
+    build:
+     context: ../fuzzm      
+#    args:
+#    - proxy_host=<proxy_host>
+#    - proxy_port=<proxy_port>
+    ports:
+    - "1718:1718"
+    links:
+    - rabbit
+    entrypoint:
+    - wait-for-it.sh
+    - rabbit:5672
+    - --
+    - java
+    - -jar
+    - /usr/local/bin/fuzzm.jar
+    - -fuzzm
+    - --target
+    - rabbit
+    - src/test/gradient.lus
+  rabbit:
+    image: "rabbitmq:3-management"
+    hostname: "rabbit"
+    ports:
+    - "15672:15672"
+    - "5672:5672"
+  printreceiver:
+    build: 
+      context: .
+#     args:
+#     - proxy=<proxy_host>:<proxy_port>
+    image: printreceiver:latest
+    links:
+    - rabbit
+    volumes:
+    - .:/root/print
+    entrypoint:
+    - wait-for-it.sh
+    - rabbit:5672
+    - --
+    - python3
+    - print_receiver.py
+    - -H
+    - rabbit

@@ -1,0 +1,4 @@
+*.TXT
+fsm
+*.fuzz
+*.cov

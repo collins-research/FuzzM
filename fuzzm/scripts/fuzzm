@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# Follow symbolic links to find actual FuzzM directory
+# Adapted from http://stackoverflow.com/a/7400673/984145
+
+rawpath() { [ ! -h "$1" ] && echo "$1" || (local link="$(expr "$(command ls -ld -- "$1")" : '.*-> \(.*\)$')"; cd $(dirname $1); rawpath "$link" | sed "s|^\([^/].*\)\$|$(dirname $1)/\1|"); }
+
+linkdir() { cd $(dirname $(rawpath $1)); pwd -P; }
+
+FUZZM_DIR=$(linkdir $0)
+
+java -ea -jar $FUZZM_DIR/../fuzzm/bin/fuzzm.jar -fuzzm "$@"

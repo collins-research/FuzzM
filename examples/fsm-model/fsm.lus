@@ -1,0 +1,357 @@
+-- 
+-- Copyright (C) 2017, Rockwell Collins
+-- All rights reserved.
+-- 
+-- This software may be modified and distributed under the terms
+-- of the 3-clause BSD license.  See the LICENSE file for details.
+-- 
+function st0(x: int) returns (y: int);
+function seq0(x: int) returns (y: int);
+
+type byte   = int;
+
+type fsm_msg = struct
+{
+  magic0 : byte;
+  magic1 : byte;
+  seq    : byte;
+  cmd    : byte;
+  buff   : byte[16]
+};
+
+node FUZZ(in: bool) returns (out: bool);
+let
+  -- Use the following for fuzzing
+  out = in;
+  -- Use the following to test counterexamples using JKind
+  -- out = (not in);
+tel
+
+node H(in: bool) returns (out: bool);
+let
+  out = in -> (pre out) and in;
+tel
+
+node INITIALLY(in: bool) returns (out: bool);
+let
+  out = false -> (pre out) or (pre in);
+tel
+
+node THEN(trigger: bool; sig: bool) returns (out: bool);
+let
+  out = false -> ((pre out) or ((pre trigger) and sig));
+tel
+
+node LINGER(in: bool; cnt: int) returns (out: bool);
+var 
+  stayed_true: bool;
+  was_true: bool;
+  dec: int;
+let
+  was_true    = in -> (pre was_true) or in;
+  stayed_true = true  -> (pre stayed_true) and (if was_true then in else true);
+  dec         = (cnt -> (pre dec)) - (if was_true then 1 else 0);
+  out         = stayed_true and in and (dec <= 0);
+tel
+
+node main(length: byte; msg: fsm_msg) returns ();
+var
+
+  ascii_buff : bool;
+
+  magic0_ok : bool;
+  magic1_ok : bool;
+  seq_ok    : bool;
+
+  cmd_hello : bool;
+  cmd_reset : bool;
+  cmd_data  : bool;
+  cmd_file  : bool;
+  cmd_keep  : bool;
+  cmd_disco : bool;
+
+  st       : int;
+  next_st  : int;
+  seq      : int;
+  next_seq : int;
+
+  st_reset          : bool;
+
+  st0               : bool;
+  st0_length_ok     : bool;
+  st0_cmd_ok        : bool;
+  st0_ok            : bool;
+  st0_pre_ok        : bool;
+  fuzz_st0_ok       : bool;
+  fuzz_st0_off0     : bool;
+  fuzz_st0_off1     : bool;
+  fuzz_st0_off2     : bool;
+  fuzz_st0_off3     : bool;
+  fuzz_st0_off4     : bool;
+  fuzz_st0_off5     : bool;
+  fuzz_st0_off6     : bool;
+
+  st1               : bool;
+  st1_length_ok     : bool;
+  st1_cmd_ok        : bool;
+  st1_ok            : bool;
+  st1_pre_ok        : bool;
+  fuzz_st1_ok       : bool;
+  fuzz_st1_off0     : bool;
+  fuzz_st1_off1     : bool;
+  fuzz_st1_off2     : bool;
+  fuzz_st1_off3     : bool;
+  fuzz_st1_off4     : bool;
+  fuzz_st1_off5     : bool;
+  fuzz_st1_off6     : bool;
+
+  st2               : bool;
+  st2_length_ok     : bool;
+  st2_cmd_ok        : bool;
+  st2_ok            : bool;
+  st2_pre_ok        : bool;
+  fuzz_st2_ok       : bool;
+  fuzz_st2_off0     : bool;
+  fuzz_st2_off1     : bool;
+  fuzz_st2_off2     : bool;
+  fuzz_st2_off3     : bool;
+  fuzz_st2_off4     : bool;
+  fuzz_st2_off5     : bool;
+  fuzz_st2_off6     : bool;
+
+  st3               : bool;
+  st3_length_ok     : bool;
+  st3_cmd_ok        : bool;
+  st3_ok            : bool;
+  st3_pre_ok        : bool;
+  fuzz_st3_ok       : bool;
+  fuzz_st3_off0     : bool;
+  fuzz_st3_off1     : bool;
+  fuzz_st3_off2     : bool;
+  fuzz_st3_off3     : bool;
+  fuzz_st3_off4     : bool;
+  fuzz_st3_off5     : bool;
+  fuzz_st3_off6     : bool;
+
+let
+
+  --
+  -- Value type constraints
+  --
+  assert(0 <= length     and length     <= 20);
+  assert(0 <= msg.magic0 and msg.magic0 < 256);
+  assert(0 <= msg.magic1 and msg.magic1 < 256);
+  assert(0 <= msg.seq    and msg.seq    < 256);
+  assert(0 <= msg.cmd    and msg.cmd    < 16);
+  assert(0 <= msg.buff[ 0] and msg.buff[ 0] < 256);
+  assert(0 <= msg.buff[ 1] and msg.buff[ 1] < 256);
+  assert(0 <= msg.buff[ 2] and msg.buff[ 2] < 256);
+  assert(0 <= msg.buff[ 3] and msg.buff[ 3] < 256);
+  assert(0 <= msg.buff[ 4] and msg.buff[ 4] < 256);
+  assert(0 <= msg.buff[ 5] and msg.buff[ 5] < 256);
+  assert(0 <= msg.buff[ 6] and msg.buff[ 6] < 256);
+  assert(0 <= msg.buff[ 7] and msg.buff[ 7] < 256);
+  assert(0 <= msg.buff[ 8] and msg.buff[ 8] < 256);
+  assert(0 <= msg.buff[ 9] and msg.buff[ 9] < 256);
+  assert(0 <= msg.buff[10] and msg.buff[10] < 256);
+  assert(0 <= msg.buff[11] and msg.buff[11] < 256);
+  assert(0 <= msg.buff[12] and msg.buff[12] < 256);
+  assert(0 <= msg.buff[13] and msg.buff[13] < 256);
+  assert(0 <= msg.buff[14] and msg.buff[14] < 256);
+  assert(0 <= msg.buff[15] and msg.buff[15] < 256);
+
+  ascii_buff =
+  (65 <= msg.buff[ 0] and msg.buff[ 0] <= 123) and
+  (65 <= msg.buff[ 1] and msg.buff[ 1] <= 123) and
+  (65 <= msg.buff[ 2] and msg.buff[ 2] <= 123) and
+  (65 <= msg.buff[ 3] and msg.buff[ 3] <= 123) and
+  (65 <= msg.buff[ 4] and msg.buff[ 4] <= 123) and
+  (65 <= msg.buff[ 5] and msg.buff[ 5] <= 123) and
+  (65 <= msg.buff[ 6] and msg.buff[ 6] <= 123) and
+  (65 <= msg.buff[ 7] and msg.buff[ 7] <= 123) and
+  (65 <= msg.buff[ 8] and msg.buff[ 8] <= 123) and
+  (65 <= msg.buff[ 9] and msg.buff[ 9] <= 123) and
+  (65 <= msg.buff[10] and msg.buff[10] <= 123) and
+  (65 <= msg.buff[11] and msg.buff[11] <= 123) and
+  (65 <= msg.buff[12] and msg.buff[12] <= 123) and
+  (65 <= msg.buff[13] and msg.buff[13] <= 123) and
+  (65 <= msg.buff[14] and msg.buff[14] <= 123) and
+  (65 <= msg.buff[15] and msg.buff[15] <= 123)
+  ;
+
+  --
+  -- Magic Numbers
+  --
+  magic0_ok   = (msg.magic0 = 170) ; -- 0xaa
+  magic1_ok   = (msg.magic1 = 187) ; -- 0xbb
+
+  --
+  -- Sequence Number
+  --
+  seq_ok      = (msg.seq = seq);
+
+  --
+  -- Commands
+  --
+  cmd_hello = (msg.cmd = 1) ; -- 0x01
+  cmd_reset = (msg.cmd = 2) ; -- 0x02
+  cmd_data  = (msg.cmd = 3) ; -- 0x03
+  cmd_file  = (msg.cmd = 4) and (length > 6 + 4) and ascii_buff ; -- 0x04
+  cmd_keep  = (msg.cmd = 5) ; -- 0x05
+                              -- 0x06
+  cmd_disco = (msg.cmd = 7) ; -- 0x07
+
+  --
+  -- State Machine
+  --
+  next_st = (if (cmd_reset) then 0 else
+             if (st0 and st0_ok) then (if (cmd_hello) then 1 else 0) else
+             if (st1 and st1_ok) then (if (cmd_data)  then 2 else 1) else
+             if (st2 and st2_ok) then (if (cmd_file)  then 3 else 2) else
+             if (st3 and st3_ok) then (if (cmd_disco) then 4 else 3) else
+             0);
+
+  st = st0(0) -> (pre next_st);
+
+  next_seq = (if (cmd_reset) then 0 else
+              if (st0 and st0_ok) then (1 + seq) else
+              if (st1 and st1_ok) then (1 + seq) else
+              if (st2 and st2_ok) then (1 + seq) else
+              if (st3 and st3_ok) then (1 + seq) else
+              0);
+
+  seq = seq0(0) -> (pre next_seq);
+
+  -----------------------------------------------------------------------------
+  --
+  -- Reset to State 0
+  --
+  -----------------------------------------------------------------------------
+
+  st_reset = INITIALLY(magic0_ok and magic1_ok and (length = 4) and cmd_reset);
+
+  -----------------------------------------------------------------------------
+  --
+  -- State 0 behaviors
+  --
+  -----------------------------------------------------------------------------
+  st0           = (st = 0)                             ; -- st0
+  st0_length_ok = (length = 4)                         ; -- message length
+  st0_cmd_ok    = (cmd_hello or cmd_reset or cmd_keep) ; -- state 0 commands
+  st0_ok        = magic0_ok and 
+                  magic1_ok and 
+                  seq_ok and 
+                  st0_cmd_ok and 
+                  st0_length_ok;
+  st0_pre_ok    = st_reset and st0;
+
+  fuzz_st0_ok   = FUZZ(st0_pre_ok and st0_ok);
+  fuzz_st0_off0 = FUZZ(st0_pre_ok                                                                        );
+  fuzz_st0_off1 = FUZZ(st0_pre_ok and               magic1_ok and seq_ok and st0_cmd_ok and st0_length_ok);
+  fuzz_st0_off2 = FUZZ(st0_pre_ok and magic0_ok and               seq_ok and st0_cmd_ok and st0_length_ok);
+  fuzz_st0_off3 = FUZZ(st0_pre_ok and magic0_ok and magic1_ok and            st0_cmd_ok and st0_length_ok);
+  fuzz_st0_off4 = FUZZ(st0_pre_ok and magic0_ok and magic1_ok and seq_ok and st0_cmd_ok and st0_length_ok);
+  fuzz_st0_off5 = FUZZ(st0_pre_ok and magic0_ok and magic1_ok and seq_ok and                st0_length_ok);
+  fuzz_st0_off6 = FUZZ(st0_pre_ok and magic0_ok and magic1_ok and seq_ok and st0_cmd_ok                  );
+
+  --%PROPERTY fuzz_st0_ok   ;
+  --%PROPERTY fuzz_st0_off0 ;
+  --%PROPERTY fuzz_st0_off1 ;
+  --%PROPERTY fuzz_st0_off2 ;
+  --%PROPERTY fuzz_st0_off3 ;
+  --%PROPERTY fuzz_st0_off4 ;
+  --%PROPERTY fuzz_st0_off5 ;
+  --%PROPERTY fuzz_st0_off6 ;
+
+  -----------------------------------------------------------------------------
+  --
+  -- State 1 behaviors
+  --
+  -----------------------------------------------------------------------------
+  st1           = (st = 1)                              ; -- st1
+  st1_length_ok = (length = 4)                         ; -- message length
+  st1_cmd_ok    = (cmd_data or cmd_reset or cmd_keep)   ; -- state 1 commands
+  st1_ok        = magic0_ok and 
+                  magic1_ok and 
+                  seq_ok    and
+                  st1_cmd_ok and
+                  st1_length_ok;
+  st1_pre_ok    = st_reset and st1;
+
+  fuzz_st1_ok   = FUZZ(st1_pre_ok and st1_ok);
+  fuzz_st1_off0 = FUZZ(st1_pre_ok                                                                        );
+  fuzz_st1_off1 = FUZZ(st1_pre_ok and               magic1_ok and seq_ok and st1_cmd_ok and st1_length_ok);
+  fuzz_st1_off2 = FUZZ(st1_pre_ok and magic0_ok and               seq_ok and st1_cmd_ok and st1_length_ok);
+  fuzz_st1_off3 = FUZZ(st1_pre_ok and magic0_ok and magic1_ok and            st1_cmd_ok and st1_length_ok);
+  fuzz_st1_off4 = FUZZ(st1_pre_ok and magic0_ok and magic1_ok and seq_ok and st1_cmd_ok and st1_length_ok);
+  fuzz_st1_off5 = FUZZ(st1_pre_ok and magic0_ok and magic1_ok and seq_ok and                st1_length_ok);
+  fuzz_st1_off6 = FUZZ(st1_pre_ok and magic0_ok and magic1_ok and seq_ok and st1_cmd_ok                  );
+
+  --%PROPERTY fuzz_st1_ok   ;
+  --%PROPERTY fuzz_st1_off0 ;
+  --%PROPERTY fuzz_st1_off1 ;
+  --%PROPERTY fuzz_st1_off2 ;
+  --%PROPERTY fuzz_st1_off3 ;
+  --%PROPERTY fuzz_st1_off4 ;
+  --%PROPERTY fuzz_st1_off5 ;
+  --%PROPERTY fuzz_st1_off6 ;
+
+  -----------------------------------------------------------------------------
+  --
+  -- State 2 behaviors
+  --
+  -----------------------------------------------------------------------------
+  st2           = (st = 2)                              ; -- st2
+  st2_length_ok = (length >= 4)                          ; -- message length
+  st2_cmd_ok    = (cmd_file or cmd_reset or cmd_keep)   ; -- state 2 commands
+  st2_ok        = magic0_ok and magic1_ok and seq_ok and st2_cmd_ok and st2_length_ok;
+  st2_pre_ok    = st_reset and st2;
+
+  fuzz_st2_ok   = FUZZ(st2_pre_ok and st2_ok);
+  fuzz_st2_off0 = FUZZ(st2_pre_ok                                                                        );
+  fuzz_st2_off1 = FUZZ(st2_pre_ok and               magic1_ok and seq_ok and st2_cmd_ok and st2_length_ok);
+  fuzz_st2_off2 = FUZZ(st2_pre_ok and magic0_ok and               seq_ok and st2_cmd_ok and st2_length_ok);
+  fuzz_st2_off3 = FUZZ(st2_pre_ok and magic0_ok and magic1_ok and            st2_cmd_ok and st2_length_ok);
+  fuzz_st2_off4 = FUZZ(st2_pre_ok and magic0_ok and magic1_ok and seq_ok and st2_cmd_ok and st2_length_ok);
+  fuzz_st2_off5 = FUZZ(st2_pre_ok and magic0_ok and magic1_ok and seq_ok and                st2_length_ok);
+  fuzz_st2_off6 = FUZZ(st2_pre_ok and magic0_ok and magic1_ok and seq_ok and st2_cmd_ok                  );
+
+  --%PROPERTY fuzz_st2_ok   ;
+  --%PROPERTY fuzz_st2_off0 ;
+  --%PROPERTY fuzz_st2_off1 ;
+  --%PROPERTY fuzz_st2_off2 ;
+  --%PROPERTY fuzz_st2_off3 ;
+  --%PROPERTY fuzz_st2_off4 ;
+  --%PROPERTY fuzz_st2_off5 ;
+  --%PROPERTY fuzz_st2_off6 ;
+
+  -----------------------------------------------------------------------------
+  --
+  -- State 3 behaviors
+  --
+  -----------------------------------------------------------------------------
+  st3           = (st = 3)                               ; -- st3
+  st3_length_ok = (length = 4)                           ; -- message length
+  st3_cmd_ok    = (cmd_disco or cmd_reset or cmd_keep)   ; -- state 3 commands
+  st3_ok        = magic0_ok and magic1_ok and seq_ok and st3_cmd_ok and st3_length_ok;
+  st3_pre_ok    = st_reset and st3;
+
+  fuzz_st3_ok   = FUZZ(st3_pre_ok and st3_ok);
+  fuzz_st3_off0 = FUZZ(st3_pre_ok                                                                        );
+  fuzz_st3_off1 = FUZZ(st3_pre_ok and               magic1_ok and seq_ok and st3_cmd_ok and st2_length_ok);
+  fuzz_st3_off2 = FUZZ(st3_pre_ok and magic0_ok and               seq_ok and st3_cmd_ok and st2_length_ok);
+  fuzz_st3_off3 = FUZZ(st3_pre_ok and magic0_ok and magic1_ok and            st3_cmd_ok and st2_length_ok);
+  fuzz_st3_off4 = FUZZ(st3_pre_ok and magic0_ok and magic1_ok and seq_ok and st3_cmd_ok and st2_length_ok);
+  fuzz_st3_off5 = FUZZ(st3_pre_ok and magic0_ok and magic1_ok and seq_ok and                st2_length_ok);
+  fuzz_st3_off6 = FUZZ(st3_pre_ok and magic0_ok and magic1_ok and seq_ok and st3_cmd_ok                  );
+
+  --%PROPERTY fuzz_st3_ok   ;
+  --%PROPERTY fuzz_st3_off0 ;
+  --%PROPERTY fuzz_st3_off1 ;
+  --%PROPERTY fuzz_st3_off2 ;
+  --%PROPERTY fuzz_st3_off3 ;
+  --%PROPERTY fuzz_st3_off4 ;
+  --%PROPERTY fuzz_st3_off5 ;
+  --%PROPERTY fuzz_st3_off6 ;
+
+tel

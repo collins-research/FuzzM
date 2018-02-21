@@ -1,0 +1,62 @@
+version: '3'
+services:
+  fuzzm:
+    image: fuzzm:latest
+    build:
+      context: ../fuzzm
+#     args:
+#     - proxy_host=<proxy_host>
+#     - proxy_port=<proxy_port>
+    links:
+    - rabbit
+    volumes:
+    - ".:/root/fsm"
+    working_dir: "/root/fsm"
+    entrypoint:
+    - wait-for-it.sh
+    - rabbit:5672
+    - --
+    - ./fuzz-fsm.sh
+  rabbit:
+    image: "rabbitmq:3-management"
+    hostname: "rabbit"
+    ports:
+    - "15672:15672"
+    expose:
+    - "5672"
+  fsmrelay:
+    image: fsmrelay:latest
+    build: 
+      context: .
+#     args:
+#     - proxy=<proxy_host>:<proxy_port>
+    privileged: true
+    links:
+    - rabbit
+    - fsm
+    volumes:
+    - ".:/root/fsm"
+    - "../base-receiver:/root/base-receiver"
+    working_dir: "/root/fsm"
+    entrypoint:
+    - wait-for-it.sh
+    - rabbit:5672
+    - --
+    - python3
+    - relay.py
+    - -ti
+    - fsm
+    - -tp
+    - "1515"
+    - -f
+    - rabbit
+  fsm:
+    image: fsm:latest
+    build:
+      context: fsm_demo
+    privileged: true
+    working_dir: "/root/fsm"
+    entrypoint:
+    - ./fsm
+    expose:
+    - "1515/udp"

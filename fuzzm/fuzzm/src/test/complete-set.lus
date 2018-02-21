@@ -1,0 +1,57 @@
+-- 
+-- Copyright (C) 2017, Rockwell Collins
+-- All rights reserved.
+-- 
+-- This software may be modified and distributed under the terms
+-- of the 3-clause BSD license.  See the LICENSE file for details.
+-- 
+function unique(x: int) returns (y: int);
+function min() returns (y: int);
+
+node main(in: int) returns (complete_set: bool);
+var
+  pin,sequence,sumsq,sumin: int;
+  interesting_sequence,not_increasing,not_decreasing: bool;
+  sum_equiv, unique_input, each_unique, fuzz_constraint : bool;
+let
+
+  --- Establish arbitrary bounds on the input
+  assert(  in < 128);
+  assert(-128 <= in);
+
+  -- The each_unique predicate ensures that the input sequence
+  -- contains no duplicates.
+  sequence = 0 -> (pre sequence) + 1;
+  unique_input = (unique(in) = sequence);  
+  each_unique = unique_input -> unique_input and (pre each_unique);
+
+  --- Here we use an uninterpreted function to establish an arbitrary
+  --- lower bound on the interval and say that all values are greater
+  --- than or equal to it.
+  assert(min() <= in);
+
+  -- We bias our input stream by the arbitrary minimum to generate 
+  -- a sequence of values with a non-negative minimum value.
+  pin = in - min();
+
+  -- The sum_equiv predicate ensures the sum of the biased input sequence 
+  -- is equal to the sum of a simple zero-based arithmetic sequence
+  sumsq = (sequence -> sequence + (pre sumsq));
+  sumin = (pin -> pin + (pre sumin));
+  sum_equiv = (sumsq = sumin);
+
+  --- This keeps the constraint solutions from being completely degenerate.
+  not_decreasing = false -> ((in < (pre in)) or (pre not_decreasing));
+  not_increasing = false -> ((in > (pre in)) or (pre not_increasing));
+  interesting_sequence = not_decreasing and not_increasing;
+
+  -- The complete set predicate recognizes interesting input sequences
+  -- that satisfy our notion of complete set.
+  complete_set = sum_equiv and each_unique and interesting_sequence;
+
+  -- FuzzM negates the constraints it submits to JKind so that the
+  -- resulting counterexample satisfies the desired constraint.
+  fuzz_constraint = complete_set;
+  --%PROPERTY fuzz_constraint;
+
+tel
