@@ -9,8 +9,8 @@
 package fuzzm.heuristic;
 
 import fuzzm.lustre.BooleanCtx;
+import fuzzm.util.FuzzmName;
 import fuzzm.util.ID;
-import fuzzm.util.FuzzMName;
 import fuzzm.util.RatSignal;
 import jkind.lustre.BoolExpr;
 import jkind.lustre.Expr;
@@ -119,7 +119,7 @@ public abstract class FuzzHeuristic implements HeuristicInterface {
 	
 	public BooleanCtx constraint() {
 		Expr prop = prop();
-		BooleanCtx res = new BooleanCtx(new IdExpr(FuzzMName.done));
+		BooleanCtx res = new BooleanCtx();
 		return res.implies(prop);
 	}	
 	

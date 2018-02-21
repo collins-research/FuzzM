@@ -13,9 +13,9 @@ A relay for the TFTP server is [here](relay.py).  Note that this relay uses
 
 ## Running The Example
 
-Running this example is simplest using [Docker](../INSTALLING.md).
+Running this example is simplest using [Docker](../../INSTALLING.md).
 
-To start the example, run the following commands from the `FuzzM/tftp-model` directory:
+To start the example, run the following commands from the `FuzzM/examples/tftp-model` directory:
 
 ```bash
 docker-compose up

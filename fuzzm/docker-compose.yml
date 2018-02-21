@@ -2,14 +2,14 @@ version: '3'
 services:
   fuzzm:
     build:
-#       args:
-#       - proxy_host=<proxy_host>
-#       - proxy_port=<proxy_port>
+       args:
+       - proxy_host=${PROXY_HOST}
+       - proxy_port=${PROXY_PORT}
        context: .
     image: fuzzm:latest
     entrypoint:
     - /bin/sh
     - -c
-    - "mkdir -p /root/fuzzm/bin && chmod a+rwx /root/fuzzm/bin  && cp /usr/local/bin/fuzzm.jar /root/fuzzm/bin/. && chmod a+rwx /root/fuzzm/bin/fuzzm.jar"
+    - "umask 000 && mkdir -p /root/fuzzm/bin && cp /usr/local/bin/fuzzm.jar /root/fuzzm/bin/."
     volumes:
     - ./fuzzm:/root/fuzzm

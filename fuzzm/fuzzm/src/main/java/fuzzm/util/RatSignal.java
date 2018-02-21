@@ -184,4 +184,14 @@ public class RatSignal extends Signal<RatVect> {
 		return res + "]"; 
 	}
 
+	public String toACL2() {
+	    int time = 0;
+        String res = "`(\n";
+        for (RatVect v: this) {
+            res += v.toACL2(time);
+            time++;
+        }
+        return res + ")"; 
+	}
+	
 }

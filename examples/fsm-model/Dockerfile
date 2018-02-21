@@ -2,8 +2,8 @@ FROM python:3.4.3
 
 ARG proxy
 
-ENV http_proxy=${proxy}
-ENV https_proxy=${proxy}
+ENV http_proxy=$proxy
+ENV https_proxy=$proxy
 
 RUN \
    pip3 install --proxy ${proxy} pika pyqtgraph scapy-python3

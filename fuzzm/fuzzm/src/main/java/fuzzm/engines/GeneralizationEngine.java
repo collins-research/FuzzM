@@ -8,7 +8,6 @@
  */
 package fuzzm.engines;
 
-import java.util.List;
 import java.util.Map;
 
 import fuzzm.FuzzMConfiguration;
@@ -20,26 +19,17 @@ import fuzzm.engines.messages.QueueName;
 import fuzzm.engines.messages.ReceiveQueue;
 import fuzzm.engines.messages.TestVectorMessage;
 import fuzzm.engines.messages.TransmitQueue;
-import fuzzm.lustre.BooleanCtx;
 import fuzzm.lustre.FuzzProgram;
+import fuzzm.lustre.generalize.PolyGeneralizationResult;
 import fuzzm.lustre.generalize.PolygonalGeneralizer;
-import fuzzm.poly.PolyBool;
 import fuzzm.poly.RegionBounds;
-import fuzzm.util.Debug;
 import fuzzm.util.EvaluatableSignal;
+import fuzzm.util.FuzzMInterval;
+import fuzzm.util.FuzzmName;
 import fuzzm.util.ID;
 import fuzzm.util.IntervalVector;
-import fuzzm.util.FuzzMInterval;
-import fuzzm.util.FuzzMName;
 import fuzzm.util.TypedName;
-import jkind.lustre.BinaryExpr;
-import jkind.lustre.BinaryOp;
-import jkind.lustre.Expr;
-import jkind.lustre.IdExpr;
-import jkind.lustre.NamedType;
 import jkind.lustre.Program;
-import jkind.lustre.UnaryExpr;
-import jkind.lustre.UnaryOp;
 
 /**
  * The Generalization engine takes counter examples from the
@@ -75,24 +65,24 @@ public class GeneralizationEngine extends Engine {
 		assert(false);
 	}	
 
-	@SuppressWarnings("unused")
-	private BooleanCtx packageAssertions (){
-		List<Expr> assertions = model.getMainNode().assertions;
-		BooleanCtx assertionCtx = new BooleanCtx(assertions);
-
-		assertionCtx.bind(FuzzMName.assertion);
-		Expr andedExpr = assertionCtx.getExpr();
-		
-		Expr assertExpr = new IdExpr(FuzzMName.assertion);
-		Expr preassert  = new UnaryExpr(UnaryOp.PRE, assertExpr);
-
-		Expr arrowRHS     = new BinaryExpr(preassert, BinaryOp.AND, andedExpr);
-		Expr assertionRHS = new BinaryExpr(andedExpr, BinaryOp.ARROW, arrowRHS);
-
-		assertExpr = assertionCtx.define(FuzzMName.assertion, NamedType.BOOL, assertionRHS);
-		assertionCtx.setExpr(assertExpr);
-		return assertionCtx;
-	}
+//	@SuppressWarnings("unused")
+//	private BooleanCtx packageAssertions (){
+//		List<Expr> assertions = model.getMainNode().assertions;
+//		BooleanCtx assertionCtx = new BooleanCtx(assertions);
+//
+//		assertionCtx.bind(FuzzmName.assertion);
+//		Expr andedExpr = assertionCtx.getExpr();
+//		
+//		Expr assertExpr = new IdExpr(FuzzmName.assertion);
+//		Expr preassert  = new UnaryExpr(UnaryOp.PRE, assertExpr);
+//
+//		Expr arrowRHS     = new BinaryExpr(preassert, BinaryOp.AND, andedExpr);
+//		Expr assertionRHS = new BinaryExpr(andedExpr, BinaryOp.ARROW, arrowRHS);
+//
+//		assertExpr = assertionCtx.define(FuzzmName.assertion, NamedType.BOOL, assertionRHS);
+//		assertionCtx.setExpr(assertExpr);
+//		return assertionCtx;
+//	}
 	
 	GeneralizedMessage generalizeCounterExample(CounterExampleMessage m) {
 		// For now we just generalize.
@@ -110,11 +100,11 @@ public class GeneralizationEngine extends Engine {
 		// Polygonal generalization ..
 
 		System.out.println(ID.location() + "Starting Generalization ..");
-		PolyBool polyCEX = PolygonalGeneralizer.generalizeInterface(evaluatableCEX,FuzzMName.fuzzProperty,m.fns,testMain).result;
-		if (Debug.isEnabled()) {
+		PolyGeneralizationResult polyCEX = PolygonalGeneralizer.generalizeInterface(evaluatableCEX,m.name,FuzzmName.fuzzProperty,m.fns,testMain);
+		//if (Debug.isEnabled()) {
 			System.out.println(ID.location() + "Generalization : " + polyCEX);
 			//System.out.println(ID.location() + "ACL2 : " + polyCEX.toACL2());
-		}
+		//}
 
 		// Event-based generalization ..
 //		
@@ -181,7 +171,7 @@ public class GeneralizationEngine extends Engine {
 		
 		if(m.id.constraintID == -1){
 			// here the span holds its default values		  
-			initSpan(polyCEX.intervalBounds(), m.id);
+			initSpan(polyCEX.result.intervalBounds(), m.id);
 			// now the span holds the (possibly new) actual input bounds(from vacuous constraint)
 		}		
 		return new GeneralizedMessage(name,m,polyCEX);

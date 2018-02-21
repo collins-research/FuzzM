@@ -161,11 +161,12 @@
 ;; 	//
 ;; 	// Normalizes an expression of the form (<~ 0 poly)
 ;; 	//
-(def::un solvePolyGreater0 (relation poly)
-  (declare (xargs :signature ((relation-p poly-p) variableInequality-p)
-                  :guard (not-constp poly)
+(def::un solvePolyGreater0 (relation poly cex)
+  (declare (xargs :signature ((relation-p poly-p env-p) variableInequality-p)
+                  :guard (and (not-constp poly) (gt-relation-p relation (poly-eval poly cex)))
                   :signature-hints (("Goal" :in-theory (enable signum)))
-                  :guard-hints (("Goal" :in-theory (enable signum)))))
+                  :guard-hints (("Goal" :in-theory (enable signum))))
+           (ignore cex))
   ;; (< 0 poly)
   ;; (< 0 ax + poly)
 ;; 	VariableID name = poly.leadingVariable();
@@ -182,33 +183,40 @@
           (variableGreater name relation poly))))))
 ;; }
 
-(def::signature solvePolyGreater0 (t t) variableInequality-p)
+(def::signature solvePolyGreater0 (t t t) variableInequality-p)
+
+(defthm solve-mul--1
+  (equal (poly-eval (solve x (mul -1 poly)) env)
+         (poly-eval (solve x poly) env))
+  :hints (("Goal" :do-not-induct t
+           :in-theory (enable solve))))
 
 (defthm solvePolyGreater0-contract
   (implies
    (force (not-constp poly))
-   (equal (eval-ineq (solvePolyGreater0 relation poly) env)
+   (equal (eval-ineq (solvePolyGreater0 relation poly cex) env)
           (if (equal (fix-relation relation) :exclusive) (< 0 (poly-eval poly env))
             (<= 0 (poly-eval poly env))))))
 
-(def::un solvePolyLess0 (relation poly)
-  (declare (xargs :signature ((relation-p poly-p) variableInequality-p)
-                  :guard (not-constp poly)
+(def::un solvePolyLess0 (relation poly cex)
+  (declare (xargs :signature ((relation-p poly-p env-p) variableInequality-p)
+                  :guard (and (not-constp poly) (lt-relation-p relation (poly-eval poly cex)))
                   :signature-hints (("Goal" :in-theory (enable signum)))
                   :guard-hints (("Goal" :in-theory (enable signum)))))
-  (solvePolyGreater0 relation (mul -1 poly)))
+  (solvePolyGreater0 relation (mul -1 poly) cex))
   
-(def::signature solvePolyLess0 (t t) variableInequality-p)
+(def::signature solvePolyLess0 (t t t) variableInequality-p)
 
 (defthm solvePolyLess0-contract
   (implies
    (force (not-constp poly))
-   (equal (eval-ineq (solvePolyLess0 relation poly) env)
+   (equal (eval-ineq (solvePolyLess0 relation poly cex) env)
           (if (equal (fix-relation relation) :exclusive) (< (poly-eval poly env) 0)
             (<= (poly-eval poly env) 0)))))
 
 (in-theory (disable solvePolyGreater0))
 (in-theory (disable solvePolyLess0))
+(in-theory (enable gt-relation-p))
 
 ;; ============================================================
 
@@ -257,7 +265,7 @@
                                     :exclusive
                                   :inclusive)))
 ;; 	return new RestrictionResult(keep,solvePolyGreater0(diff,relation));
-                  (mv keep (list (solvePolyGreater0 relation diff)))))))))))
+                  (mv keep (list (solvePolyGreater0 relation diff cex)))))))))))
 ;; }
   :xtype variableInequality-p
   :ytype variableInequality-p
@@ -530,10 +538,16 @@
 
 (in-theory (enable EXCLUSIVE-OP-P INCLUSIVE-OP-P))
 
+(defun zero-inclusive-relation-p (relation value)
+  (declare (type t relation value))
+  (implies (equal (rfix value) 0) (equal relation :inclusive)))
+
 ;; JAVA: VariableBound.java
 ;; static List<VariableBound> restrictDisequality(AbstractPoly xpoly, AbstractPoly ypoly, RelationType relation) {
 (def::un restrictDisequality (xpoly ypoly relation cex)
   (declare (xargs :signature ((poly-p poly-p relation-p env-p) variableBound-listp)
+                  :guard (zero-inclusive-relation-p relation (- (poly-eval xpoly cex) (poly-eval ypoly cex)))
+                  :guard-hints (("Goal" :do-not-induct t))
                   ))
 ;; 	// If you already know the relation and which variable bound to keep ..
 ;; 	List<VariableBound> res = new ArrayList<>();
@@ -555,7 +569,7 @@
 ;; 		assert(false);
 ;; 	res.add(solvePolyGreater0(diff,relation));
 ;; 	return res;
-            (list (solvePolyGreater0 relation diff))))))))
+            (list (solvePolyGreater0 relation diff cex))))))))
 ;; }
 
 ;;

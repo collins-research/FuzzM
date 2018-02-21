@@ -10,6 +10,7 @@ package fuzzm.poly;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import fuzzm.lustre.evaluation.PolyFunctionMap;
@@ -25,7 +26,7 @@ import jkind.util.BigFraction;
 abstract public class PolyBool {
 
 	public static final PolyBool TRUE  = new TruePolyBool(true,new VariableList());
-	public static final PolyBool FALSE = new NotPolyBool(false,new VariableList());
+	public static final PolyBool FALSE = new FalsePolyBool(false,new VariableList());
 	
 	public boolean cex;
 	final VariableList body;
@@ -58,6 +59,10 @@ abstract public class PolyBool {
 		this.cex = c.cex;
 	}
 	
+	public static PolyBool boolVar(VariableBoolean c) {
+	    return c.isNegated() ? new FalsePolyBool(c) : new TruePolyBool(c);
+	}
+	
 	public static PolyBool less0(AbstractPoly arg) {
 		//
 		// We need to normalize these expressions immediately.
@@ -67,9 +72,11 @@ abstract public class PolyBool {
 		if (arg.isConstant()) {
 			return (arg.getConstant().signum() < 0) ? TRUE : FALSE;
 		}
-		boolean cex = arg.evaluateCEX().signum() < 0;
-		VariableBound res = VariableBound.solvePolyLess0(arg, RelationType.EXCLUSIVE, FeatureType.FEATURE, cex);
-		return new TruePolyBool(res);
+		PolyBool res = VariableBound.normalizePolyLess0(arg, RelationType.EXCLUSIVE, FeatureType.FEATURE, TargetType.CHAFF);
+		if (Debug.proof()) {
+		    ProofWriter.printRefinement(ID.location(),"less0","(< " + arg.toACL2() + " 0)" , res.toACL2());
+		}
+		return res;
 	}
 	
 	public static PolyBool greater0(AbstractPoly arg) {
@@ -78,9 +85,11 @@ abstract public class PolyBool {
 		if (arg.isConstant()) {
 			return (arg.getConstant().signum() > 0) ? TRUE : FALSE;
 		}
-		boolean cex = arg.evaluateCEX().signum() > 0;
-		VariableBound res = VariableBound.solvePolyGreater0(arg, RelationType.EXCLUSIVE, FeatureType.FEATURE, cex);
-		return new TruePolyBool(res);
+		PolyBool res = VariableBound.normalizePolyGreater0(arg, RelationType.EXCLUSIVE, FeatureType.FEATURE, TargetType.CHAFF);
+		if (Debug.proof()) {
+            ProofWriter.printRefinement(ID.location(),"greater0","(< 0 " + arg.toACL2() + ")" , res.toACL2());
+        }
+        return res;
 	}
 	
 	public static PolyBool equal0(AbstractPoly arg) {
@@ -88,65 +97,79 @@ abstract public class PolyBool {
 		if (arg.isConstant()) {
 			return (arg.getConstant().signum() == 0) ? TRUE : FALSE;
 		}
-		VariableID id = arg.leadingVariable();
-		AbstractPoly  poly = arg.solveFor(id);
-		// x = -poly
-		VariableBound res = new VariableEquality(id,poly,arg.evaluateCEX().signum() == 0);
-		return new TruePolyBool(res);		
+		PolyBool res = VariableBound.normalizePolyEquality0(arg, FeatureType.FEATURE, TargetType.CHAFF);
+		if (Debug.proof()) {
+            ProofWriter.printRefinement(ID.location(),"equal0","(= 0 " + arg.toACL2() + ")" , res.toACL2());
+        }
+        return res;
 	}
 	
-	private int features() {
-		int res = 0;
-		for (Variable vc: body) {
-			res += vc.countFeatures();
-		}
-		return res;
-	}
+//	private int features() {
+//		int res = 0;
+//		for (Variable vc: body) {
+//			res += vc.countFeatures();
+//		}
+//		return res;
+//	}
 
 	private static PolyBool and_true(PolyBool x, PolyBool y) {
-		VariableList xbody = x.isNegated() ? x.body.chooseAndNegateOne() : x.body;
-		VariableList ybody = y.isNegated() ? y.body.chooseAndNegateOne() : y.body;
-		PolyBool res = new TruePolyBool(true,VariableList.and(AndType.TRUE,xbody,ybody));
-		if (Debug.logic()) {
-			ProofWriter.printThms("and_true",x.toACL2(), y.toACL2(), res.toACL2());
-		}
+	    // If either input were negated, they would evaluate to false.
+	    assert(! x.isNegated());
+	    assert(! y.isNegated());
+		VariableList xbody = x.body;
+		VariableList ybody = y.body;
+		PolyBool res = new TruePolyBool(x.cex && y.cex,VariableList.andTT(xbody,ybody));
 		return res;
 	}
 	
 	private static PolyBool and_false(PolyBool x, PolyBool y) {
-		if (Debug.logic()) 
-			System.out.println(ID.location() + "andFalse: (" + x + " and "+ y + ")");		
-		if ((! x.isNegated()) && (! y.isNegated())) {
-			return new TruePolyBool(false,VariableList.and(AndType.FALSE,x.body,y.body));
-		}
-		if (x.features() > y.features()) {
-			return x;
-		}
-		return y;
+	    assert(x.isNegated() && y.isNegated());
+		PolyBool res = new FalsePolyBool(x.cex || y.cex,VariableList.andFF(x.body,y.body));
+		if (Debug.isEnabled()) 
+            System.out.println(ID.location() + "andFalse: (" + x + " and "+ y + ") = " + res);       
+        return res;
 	}
 	
+    private static PolyBool and_true_false(PolyBool x, PolyBool y) {
+        assert(! x.isNegated() && y.isNegated());
+        PolyBool res = new FalsePolyBool(! x.cex || y.cex,VariableList.andTF(x.body,y.body));
+        if (Debug.isEnabled()) 
+            System.out.println(ID.location() + "andTrueFalse: (" + x + " and "+ y + ") = " + res);       
+        return res;
+    }
+    
 	private static PolyBool and(PolyBool x, PolyBool y) {
 	    //System.out.println(ID.location() + "x = " + x);
 	    //System.out.println(ID.location() + "y = " + y);
-        if (x.isTrue())  return y;
-		if (y.isTrue())  return x;
-		if (x.isFalse() || y.isFalse()) return PolyBool.FALSE;
+        if (x.isAlwaysTrue())  return y;
+		if (y.isAlwaysTrue())  return x;
+		if (x.isAlwaysFalse() || y.isAlwaysFalse()) return PolyBool.FALSE;
+		PolyBool res;
 		if (x.cex) {
 			if (y.cex) {
-				return and_true(x,y);
+				res = and_true(x,y);
 			} else {
-				return y;
+			    res = and_true_false(x,y);
 			}
 		} else if (y.cex) {
-			return x;
+			res = and_true_false(y,x);
 		} else {
-			return and_false(x,y);
+			res = and_false(x,y);
 		}
+		if (Debug.isEnabled()) {
+		    System.out.println(ID.location() + "and(" + x + "," + y + ") =" + res);
+		}
+		//Debug.setProof(true);
+        if (Debug.proof()) {
+            ProofWriter.printRefinement(ID.location(),"and","(and " + x.toACL2() + y.toACL2() + ")", res.toACL2());
+		}
+		//Debug.setProof(false);
+		return res;
 	}
 	
-	protected abstract boolean isNegated();
-	public abstract boolean isFalse();
-	public abstract boolean isTrue();
+	public abstract boolean isNegated();
+	public abstract boolean isAlwaysFalse();
+	public abstract boolean isAlwaysTrue();
 	
 	abstract public PolyBool not();	
 	public PolyBool and(PolyBool arg) {
@@ -190,17 +213,29 @@ abstract public class PolyBool {
 		return res;
 	}
 
+	abstract public List<Variable> getArtifacts();
+	
+    abstract public List<Variable> getTargets();
+    
 	public RatSignal randomVector(boolean biased, BigFraction min, BigFraction max, IntervalVector span, Map<VariableID,BigFraction> ctx) {
-		return body.randomVector(biased, min, max, span, ctx);
+	    assert(cex && !isNegated());
+		RatSignal res;
+		try {
+		    res = body.randomVector(biased, min, max, span, ctx);
+		} catch (Throwable t) {
+		    System.err.println(ID.location() + "*** Failing Example " + this.toString());
+		    throw t;
+		}
+		return res;
 	}
 	
-	public static PolyBool range(VariableID v, BigFraction min, BigFraction max) {
-		PolyBase minP = new PolyBase(min);
-		PolyBase maxP = new PolyBase(max);
-		VariableGreater gt = new VariableGreater(v,v.cex.compareTo(min) >= 0,RelationType.INCLUSIVE,minP,FeatureType.FEATURE);
-		VariableLess    lt = new VariableLess(v,v.cex.compareTo(max) <= 0,RelationType.INCLUSIVE,maxP,FeatureType.FEATURE);
-		return new TruePolyBool(new VariableInterval(gt,lt,OpType.AND));
-	}
+//	public static PolyBool range(VariableID v, BigFraction min, BigFraction max) {
+//		PolyBase minP = new PolyBase(min);
+//		PolyBase maxP = new PolyBase(max);
+//		VariableGreater gt = new VariableGreater(v,v.cex.compareTo(min) >= 0,RelationType.INCLUSIVE,minP,FeatureType.FEATURE);
+//		VariableLess    lt = new VariableLess(v,v.cex.compareTo(max) <= 0,RelationType.INCLUSIVE,maxP,FeatureType.FEATURE);
+//		return new TruePolyBool(new VariableInterval(gt,lt));
+//	}
 
 	abstract public PolyBool normalize();
 

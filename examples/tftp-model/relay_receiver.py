@@ -25,7 +25,7 @@ class RelayModes:
 
 class RelayReceiver(FuzzMReceiverBaseClassThread):
 
-    MAX_QUEUE_LENGTH = 1000
+    MAX_QUEUE_LENGTH = 100000
 
     def __init__(self, host):
         super(RelayReceiver, self).__init__(host)

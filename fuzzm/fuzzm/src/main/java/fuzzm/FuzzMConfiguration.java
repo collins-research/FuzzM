@@ -19,12 +19,13 @@ import java.util.List;
 
 import fuzzm.heuristic.Features;
 import fuzzm.lustre.AddSignals;
+import fuzzm.lustre.BindPre;
 import fuzzm.lustre.NormalizeIDs;
+import fuzzm.lustre.RemoveEnumTypes;
 import fuzzm.solver.Solver;
 import fuzzm.solver.SolverName;
-import fuzzm.util.IntervalVector;
 import fuzzm.util.FuzzMInterval;
-import fuzzm.util.FuzzMName;
+import fuzzm.util.IntervalVector;
 import fuzzm.util.TypedName;
 import jkind.ExitCodes;
 import jkind.Main;
@@ -44,15 +45,16 @@ public class FuzzMConfiguration {
 	public Program  model;
 	public List<VarDecl> inputNames;
 	//public Path     inputSpecFile;
-	public Path     fuzzFile;
-	public int      vectors;
+	public final Path     fuzzFile;
+	public final int      vectors;
 	public String   target;
 	public List<SolverName>  userSolvers;
 	private IntervalVector span;
-	public boolean noVectors;
+	public final boolean noVectors;
+	public final boolean Proof;
 	//public boolean properties;
 	//public boolean asteroid;
-	public boolean throttle;
+	public final boolean throttle;
 	public String configDescription;
 	//public boolean unbiased;
 	
@@ -87,6 +89,7 @@ public class FuzzMConfiguration {
 			span.put(new TypedName(vd.id,(NamedType) vd.type),new FuzzMInterval((NamedType) vd.type));
 		}
 		configDescription = settings.configDescription;
+		Proof = settings.Proof;
 	} 
 	
 	public IntervalVector getSpan() {
@@ -146,8 +149,11 @@ public class FuzzMConfiguration {
 			System.exit(1);
 		}
 		program = Translate.translate(program);
-		//program = DropProperties.drop(program);
+		program = RemoveEnumTypes.program(program);
+        program = BindPre.program(program);
+        //program = DropProperties.drop(program);
 		program = NormalizeIDs.normalize(program);
+
 		
         // Deprecated: these were used primarily for property synthesis.
 		// There is a bug in bindLocals with (pre (if .. then 0 else 1))
@@ -158,7 +164,7 @@ public class FuzzMConfiguration {
 		// Add k-counter.  We add the top level signal _k that starts at zero
 		// and simply increments in each time step.  _k can be used by other
 		// signals to perform multi-cycle computation.
-		program = AddSignals.add_K(program);
+		program = AddSignals.addTime(program);
 		
 		// Note: the done signal is deprecated.
 		//
@@ -168,7 +174,7 @@ public class FuzzMConfiguration {
 		// cycle.  If no such signal is found, we create one.  The created
 		// signal assumes a single step transaction.  After finding/creating
 		// the signal we bind it to _done.
-		program = AddSignals.add_done(program, FuzzMName.done);
+		// program = AddSignals.add_done(program, FuzzmName.done);
 		return program;
 	}
 	
@@ -192,8 +198,12 @@ public class FuzzMConfiguration {
 			e.printStackTrace();
 			System.exit(ExitCodes.UNCAUGHT_EXCEPTION);
 		}
-		res.toFile().deleteOnExit();
-		return res;
+		File z = res.toFile();
+		z.deleteOnExit();
+		z.setWritable(true,false);
+		z.setReadable(true,false);
+		z.setExecutable(true,false);
+        return res;
 	}
 	
 	public static boolean deleteDir(File dir) {

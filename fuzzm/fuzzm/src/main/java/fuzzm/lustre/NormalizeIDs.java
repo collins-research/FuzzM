@@ -32,7 +32,7 @@ public class NormalizeIDs extends AstMapVisitor {
 	@Override
 	public Program visit(Program e) {
 		Program x = super.visit(e);
-		return new Program(x.location,x.types,x.constants,x.nodes,x.functions, ID.encodeString(x.main));
+		return new Program(x.location,x.types,x.constants,x.functions,x.nodes, ID.encodeString(x.main));
 	}
 	
 	@Override

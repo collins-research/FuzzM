@@ -19,7 +19,7 @@ import jkind.lustre.IdExpr;
 public class Features {
 
 	List<HeuristicInterface> body;
-	int epocCount;
+	int totalProperties;
 	int next;
 	
 	public Features(FuzzMConfiguration cfg) {
@@ -36,10 +36,11 @@ public class Features {
 			throw new RuntimeException();
 		}
 		body = new ArrayList<HeuristicInterface>();
+		int pcount = cfg.Proof ? 2 : -1;
 		for (int i=0;i<features.size();i++) {
-		    body.add(new PropertyHeuristic(cfg.getSpan(),features.get(i)));			
+		    body.add(new PropertyHeuristic(cfg.getSpan(),properties.get(i),features.get(i),pcount));			
 		}
-		epocCount = cfg.vectors;
+		totalProperties = cfg.vectors;
 		next = 0;
 	}
 	
@@ -47,17 +48,23 @@ public class Features {
 		return body.size();
 	}
 	
-	public boolean hasNext() {
-		return (epocCount != 0);
-	}
-
 	public HeuristicInterface selectFeature(int featureID) {
 		return body.get(featureID);
+	}
+	
+	public boolean done() {
+	    if (totalProperties == 0) return true;
+	    boolean done = true;
+	    for (HeuristicInterface I: body) {
+	        done &= I.isUNSAT();
+	    }
+	    return done;
 	}
 	
 	public int nextFeatureID() throws FeatureException {
 		// TODO: We really want to be able to implement
 		// an arbitrary heuristic here ..
+	    if (totalProperties == 0) throw new FeatureException();
 		int featureID;
 		int tries = 0;
 		do {
@@ -68,7 +75,7 @@ public class Features {
 		if (tries > body.size()) {
 			throw new FeatureException();
 		}
-		epocCount = (epocCount < 0) ? -1 : epocCount-1;
+		totalProperties = (totalProperties < 0) ? -1 : totalProperties-1;
 		return featureID;
 	}
 

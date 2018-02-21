@@ -26,12 +26,8 @@ import fuzzm.heuristic.Features;
 import fuzzm.heuristic.HeuristicInterface;
 import fuzzm.lustre.BooleanCtx;
 import fuzzm.util.ID;
-import fuzzm.util.FuzzMName;
 import fuzzm.util.RatSignal;
-import jkind.lustre.Expr;
-import jkind.lustre.IdExpr;
-import jkind.lustre.UnaryExpr;
-import jkind.lustre.UnaryOp;
+import jkind.lustre.BoolExpr;
 import jkind.lustre.VarDecl;
 
 /**
@@ -50,7 +46,6 @@ public class TestHeuristicEngine extends Engine {
 	Features featureList;
 	//int outstandingFeatures = 0;
 	//int minOutstanding = 0;
-	int vectors = -1;
 	
 	// TODO : replace this with something more elegant.
 	boolean boundLock = true;
@@ -70,7 +65,6 @@ public class TestHeuristicEngine extends Engine {
 		featureList = cfg.extractFeatures();
 		//outstandingFeatures = 0;
 		//minOutstanding = Math.min(4,featureList.size());
-		vectors = cfg.vectors;
 		this.cfg = cfg;	
 	}
 	
@@ -138,13 +132,11 @@ public class TestHeuristicEngine extends Engine {
 		//
 		System.out.println(ID.location() + name + " is starting ..");
 		try {
-			Expr done = new IdExpr(FuzzMName.done);
-			Expr notDone = new UnaryExpr(UnaryOp.NOT, done);	
-			BooleanCtx vacHyp = new BooleanCtx(done);
-			BooleanCtx vacProp = new BooleanCtx(notDone);		
+			BooleanCtx vacHyp = new BooleanCtx();
+			BooleanCtx vacProp = new BooleanCtx(new BoolExpr(false));	
 			RatSignal dummyTarget = new RatSignal();	
 			FeatureID vacuousId = new FeatureID(-1, true);	
-			ConstraintMessage cm = new ConstraintMessage(name,vacuousId,vacHyp,vacProp,dummyTarget,dummyTarget);
+			ConstraintMessage cm = new ConstraintMessage(name,vacuousId,"NULL",vacHyp,vacProp,dummyTarget,dummyTarget);
 			System.out.println(ID.location() + "Sending input bound constraint: " + cm);
 			testserver.push(cm);
 			while(boundLock){
@@ -163,14 +155,13 @@ public class TestHeuristicEngine extends Engine {
 					Q.wait(Q.objective());
 					//System.out.println(ID.location() + "Constraint Generalization Target : " + genTarget);
 					//System.out.println(ID.location() + "Constraint Optimization Target   : " + optTarget);
-					testserver.push(new ConstraintMessage(name,id,hyp,prop,optTarget,genTarget));
-					if (vectors > 0) vectors--;
-					if (done()) {
-						System.out.println(ID.location() + "*** Test Heuristic is sending Exit command ..");
-						exitserver.push(new ExitMessage(name));
-						break;
-					}
+					testserver.push(new ConstraintMessage(name,id,Q.name(),hyp,prop,optTarget,genTarget));					
 				} catch (FeatureException f) {
+				    if (done()) {	  			        
+	                  System.out.println(ID.location() + "*** Test Heuristic is sending Exit command ..");
+	                  exitserver.push(new ExitMessage(name));
+	                  break;	                   
+				    }
 					sleep(1000);
 				}
 				processQueues();
@@ -181,7 +172,7 @@ public class TestHeuristicEngine extends Engine {
 	}
 
 	boolean done() {
-		return (vectors == 0);
+	    return featureList.done();
 	}
 	
 	void processQueues() throws ExitException {
@@ -191,7 +182,7 @@ public class TestHeuristicEngine extends Engine {
 			if (m.id.constraintID >= 0) {
 				HeuristicInterface Q = featureList.selectFeature(m.id.constraintID);
 				// TODO: Improve hyp generation w/non features
-				Q.sat(m.id.objective,m.counterExample,new BooleanCtx());
+				Q.sat(m.id.objective,m.time,m.counterExample,m.polyCEX);
 			}
 		}
 		while (unqueue.messageReady()) {

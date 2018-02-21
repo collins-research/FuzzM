@@ -17,6 +17,9 @@ import fuzzm.poly.PolyBase;
 import fuzzm.poly.PolyBool;
 import fuzzm.poly.VariableID;
 import fuzzm.value.hierarchy.EvaluatableValue;
+import jkind.lustre.BinaryExpr;
+import jkind.lustre.BinaryOp;
+import jkind.lustre.Expr;
 import jkind.lustre.NamedType;
 import jkind.lustre.Type;
 import jkind.util.BigFraction;
@@ -82,7 +85,14 @@ public class IntegerPoly extends PolyEvaluatableValue {
 		PolyBool gt0 = PolyBool.greater0(mp.negate()).not();
 		PolyBool ltD = PolyBool.less0(mp.subtract(new BigFraction(D.abs())));
 		GlobalState.addConstraint(gt0.and(ltD));
-		return new IntegerPoly(new PolyBase(k));
+		Expr DIV = GlobalState.getExpr();
+		int step = GlobalState.getStep();
+        GlobalState.addReMap(k, step,DIV);
+        Expr DEN = ((BinaryExpr) DIV).right;
+        Expr NUM = ((BinaryExpr) DIV).left;
+        Expr MOD = new BinaryExpr(NUM,BinaryOp.MODULUS,DEN);
+        GlobalState.addReMap(m,step,MOD);
+        return new IntegerPoly(new PolyBase(k));
 	}
 	
 	@Override
@@ -122,6 +132,13 @@ public class IntegerPoly extends PolyEvaluatableValue {
 		PolyBool gt0 = PolyBool.greater0(mp.negate()).not();
 		PolyBool ltD = PolyBool.less0(mp.subtract(new BigFraction(D.abs())));
 		GlobalState.addConstraint(gt0.and(ltD));
+	    Expr MOD = GlobalState.getExpr();
+	    int step = GlobalState.getStep();
+        GlobalState.addReMap(m,step, MOD);
+	    Expr DEN = ((BinaryExpr) MOD).right;
+	    Expr NUM = ((BinaryExpr) MOD).left;
+	    Expr DIV = new BinaryExpr(NUM,BinaryOp.INT_DIVIDE,DEN);
+	    GlobalState.addReMap(k,step,DIV);
 		return new IntegerPoly(mp);
 	}
 

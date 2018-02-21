@@ -100,7 +100,7 @@ def relay(fuzz_ip, target_ip):
                 UDP(sport=local_port, dport=TFTP_PORT) / \
                 (bytes(opcode) + bytes(payload))
 
-            rx_pkt = sr1(pkt, filter=local_filter, timeout=1)
+            rx_pkt = sr1(pkt, filter=local_filter, timeout=1,verbose=False)
 
             remote_port = rx_pkt[0].sport()
         elif stream_active and opcode[1] in DATA_FLOW:
@@ -109,7 +109,7 @@ def relay(fuzz_ip, target_ip):
                 UDP(sport=local_port, dport=remote_port) / \
                 (bytes(opcode) + bytes(payload))
 
-            sr1(pkt, filter=local_filter, timeout=1)
+            sr1(pkt, filter=local_filter, timeout=1,verbose=False)
         else:
             stream_active = False
             print("Opcode %d out of order" % opcode[1])

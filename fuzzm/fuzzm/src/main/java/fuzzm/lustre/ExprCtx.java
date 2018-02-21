@@ -95,7 +95,7 @@ public class ExprCtx extends LustreCtx {
 
 	public Expr op(BinaryOp op, ExprCtx earg) {
 		add(earg);
-		return op(op,earg.defaultExpr);
+		return op(op,earg.getExpr());
 	}
 
 	public Expr op(UnaryOp op) {

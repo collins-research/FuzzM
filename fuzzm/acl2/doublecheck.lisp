@@ -60,12 +60,33 @@
   (if (not (consp list)) t
     (and (car list) (min-list (cdr list)))))
 
+#+joe
 (defun ith (n list)
   (declare (type t n list))
   (if (not (consp list)) nil
     (let ((n (nfix n)))
       (if (zp n) (car list)
         (ith (1- n) (cdr list))))))
+
+(defun getval (name default ctx)
+  (declare (type t name ctx))
+  (if (not (consp ctx)) default
+    (let ((entry (car ctx)))
+      (if (not (consp entry)) (getval name default (cdr ctx))
+        (let ((key (car entry)))
+          (if (equal name key) (cdr entry)
+            (getval name default (cdr ctx))))))))
+
+(defthm open-getval-on-cons
+  (equal (getval name default (cons entry res))
+         (let ((ctx (cons entry res)))
+           (let ((entry (car ctx)))
+             (if (not (consp entry)) (getval name default (cdr ctx))
+               (let ((key (car entry)))
+                 (if (equal name key) (cdr entry)
+                   (getval name default (cdr ctx)))))))))
+
+(in-theory (disable getval))
 
 (defund any (x) (declare (type t x)) x)
 (in-theory (disable (:type-prescription any)))
@@ -165,8 +186,8 @@
       (- (rfix (evAlt x env))))
      (('not x)
       (not (evAlt x env)))
-     (('id n &)
-      (ith n env))
+     (('id n cex)
+      (getval n cex env))
      (('lit val)
       val)
      (('tag & expr)
@@ -286,3 +307,52 @@
 (defequiv bool-equiv-list)
 (defcong bool-equiv-list bool-equiv-list (not-list x) 1)
 (defcong bool-equiv-list iff (and-list x) 1)
+
+(defevaluator ev-ev ev-ev-list
+  ((evalt arg any)
+   (evcex arg)
+   (if x y z)
+   ))
+
+(defun meta-and-evalt (args any)
+  (if (consp args)
+      `(if (evalt (quote ,(car args)) ,any)
+           ,(meta-and-evalt (cdr args) any)
+         (quote nil))
+    `(quote t)))
+
+(defthm ev-ev-meta-and-evalt
+  (iff (ev-ev (meta-and-evalt expr any) env)
+       (and-list (evalt-list expr (ev-ev any env)))))
+
+(defun meta-and-evcex (args)
+  (if (consp args)
+      `(if (evcex (quote ,(car args)))
+           ,(meta-and-evcex (cdr args))
+         (quote nil))
+    `(quote t)))
+
+(defthm ev-ev-meta-and-evcex
+  (iff (ev-ev (meta-and-evcex expr) env)
+       (and-list (evcex-list expr))))
+
+(defun meta-evx (term)
+  (case-match term
+   (('evalt ('quote body) any)
+    (case-match body
+      (('and . args)
+       (meta-and-evalt args any))
+      (& term)))
+   (('evcex ('quote body))
+    (case-match body
+      (('and . args)
+       (meta-and-evcex args))
+      (& term)))
+   (& term)))
+
+(defthm *meta*-ev-ev-meta
+  (iff (ev-ev term env)
+       (ev-ev (meta-evx term) env))
+  :rule-classes ((:meta :trigger-fns (evalt evcex))))
+
+

@@ -24,8 +24,8 @@ public class ConstraintMessage extends FeatureMessage {
 	public RatSignal optimizationTarget;
 	public RatSignal generalizationTarget;
 	
-	public ConstraintMessage(EngineName source, FeatureID id, BooleanCtx hyp, BooleanCtx prop, RatSignal optimizationTarget, RatSignal generalizationTarget) {
-		super(source,QueueName.ConstraintMessage,id);
+	public ConstraintMessage(EngineName source, FeatureID id, String name, BooleanCtx hyp, BooleanCtx prop, RatSignal optimizationTarget, RatSignal generalizationTarget) {
+		super(source,QueueName.ConstraintMessage,id,name);
 		this.hyp = hyp;
 		this.prop = prop;
 		//assert(target.size() > 0);

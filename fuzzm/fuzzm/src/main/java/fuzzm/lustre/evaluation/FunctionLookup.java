@@ -24,7 +24,7 @@ public class FunctionLookup<T> {
 	public FunctionLookup(Collection<String> fns) {
 		fmap = new HashMap<>();
 		for (String fn: fns) {
-			fmap.put(fn, new HashMap<>());
+		    fmap.put(fn, new HashMap<>());
 		}
 	}
 	
@@ -36,7 +36,7 @@ public class FunctionLookup<T> {
 	
 	public Collection<T> getValues(String fn) {
 		Map<EvaluatableArgList,T> m1 = fmap.get(fn);
-		if (m1 == null) throw new IllegalArgumentException();
+		if (m1 == null) throw new IllegalArgumentException(fn + " not found in FunctionLookup " + this.toString());
 		return m1.values();
 	}
 	
@@ -50,7 +50,7 @@ public class FunctionLookup<T> {
 
 	public void set(String fn, EvaluatableArgList args, T value) {
 		Map<EvaluatableArgList,T> m1 = fmap.get(fn);
-		if (m1 == null) throw new IllegalArgumentException();
+		if (m1 == null) throw new IllegalArgumentException(fn + " not found in FunctionLookup " + this.toString());
 		m1.put(args, value);
 		fmap.put(fn,m1);
 	}
@@ -60,12 +60,13 @@ public class FunctionLookup<T> {
 		for (EvaluatableArgList arg: fmap.keySet()) {
 			res += " " + fn + arg + ": " + fmap.get(arg) + "\n";
 		}
+		res += "\n";
 		return res;
 	}
 	
 	@Override
 	public String toString() {
-		String res = "{\n";
+		String res = "{Functions:\n";
 		for (String fn: fmap.keySet()) {
 			res += toString(fn,fmap.get(fn));
 		}

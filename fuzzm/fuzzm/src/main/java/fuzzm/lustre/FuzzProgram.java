@@ -8,8 +8,9 @@
  */
 package fuzzm.lustre;
 
+import fuzzm.util.Debug;
+import fuzzm.util.FuzzmName;
 import fuzzm.util.ID;
-import fuzzm.util.FuzzMName;
 import jkind.lustre.Equation;
 import jkind.lustre.IdExpr;
 import jkind.lustre.Location;
@@ -32,11 +33,12 @@ public class FuzzProgram {
 	private static Node fuzz(Node node, ExprCtx constraint) {
 		NodeBuilder NodeB = new NodeBuilder(node);
 		NodeB = NodeB.clearProperties();
-		String pname = FuzzMName.fuzzProperty;
+		NodeB = NodeB.clearIvc();
+        String pname = FuzzmName.fuzzProperty;
 		NodeB = NodeB.addLocal(new VarDecl(Location.NULL,pname,NamedType.BOOL));
 		NodeB = NodeB.addEquations(constraint.eqs);
 		NodeB = NodeB.addLocals(constraint.decls);
-		System.out.println(ID.location() + "Constraint: " + constraint.getExpr());
+		if (Debug.isEnabled()) System.out.println(ID.location() + "Constraint: " + constraint.getExpr());
 		NodeB = NodeB.addEquation(new Equation(new IdExpr(pname),constraint.getExpr()));
 		NodeB = NodeB.addProperty(pname);
 		Node z = NodeB.build();

@@ -39,6 +39,16 @@ public class LustreCtx {
 		return stepID;
 	}
 	
+    public void define(IdExpr lhs, Expr rhs) {
+        eqs.add(new Equation(lhs,rhs));
+    }
+    
+    public IdExpr declare(String name, NamedType type) {
+        IdExpr   stepID = new IdExpr(name);
+        decls.add(new VarDecl(name,type));      
+        return stepID;
+    }
+    
 	public void add(LustreCtx arg) {
 		eqs.addAll(arg.eqs);
 		decls.addAll(arg.decls);

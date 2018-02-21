@@ -63,7 +63,17 @@ public class Solver {
         this.userSolvers = userSolvers;
         javaExec = System.getProperty("java.home") + File.separator + "bin" + File.separator + "java";
         try {
-            this.jkindJarPath = findFile("jkind.jar").getAbsolutePath();
+            try {
+                // See if JKind is on the system PATH
+                this.jkindJarPath = findFile(System.getenv("PATH"),"jkind.jar").getAbsolutePath();
+            } catch (FileNotFoundException e1) {                
+                try {
+                    // Try to use JKind from the FuzzM distribution
+                    this.jkindJarPath = findFile(mvn_repo_path(),"jkind-uf.jar").getAbsolutePath();
+                } catch (FileNotFoundException e2) {
+                    throw e1;
+                }
+            }
             this.pythonExec = getExecutable("python");
             this.xml2vectorPath = workingDirectory.resolve("xml2vector.py").toAbsolutePath().toString();
         } catch (IOException e) {
@@ -81,7 +91,7 @@ public class Solver {
         if (home != null) {
             return home + File.separator + execName;
         }
-        File execFile = findFile(execName);
+        File execFile = findFile(System.getenv("PATH"),execName);
         return execFile.toString();
     }
 
@@ -154,17 +164,40 @@ public class Solver {
 
     }
 
-    public File findFile(String filename) throws FileNotFoundException {
-        String systemPath = System.getenv("PATH");
-        String[] paths = systemPath.split(File.pathSeparator);
-
+    public static String jarPath() {
+        File jarDir = new File(ClassLoader.getSystemClassLoader().getResource(".").getPath());
+        return jarDir.getAbsolutePath();
+      }
+    
+    private String mvn_repo_path() throws FileNotFoundException {
+        String path = ".";
+        String jar_path = jarPath();
+        // MVN repo is here: FuzzM/fuzzm/fuzzm/mvn-repo
+        try {
+            // Eclipse typically executes from FuzzM/fuzzm/fuzzm/target/classes
+            String eclipse_path = new File(jar_path + "/../../mvn-repo/jkind/jkind/uf").getCanonicalFile().getAbsolutePath();   
+            //System.out.println(ID.location() + "*** Eclipse path : " + eclipse_path);            
+            path = path + ":" + eclipse_path;
+        } catch (Throwable t) {
+        }
+        try {
+            // We store generated .jar files in FuzzM/fuzzm/fuzzm/bin
+            String cmd_path = new File(jar_path + "/../mvn-repo/jkind/jkind/uf").getCanonicalFile().getAbsolutePath();
+            //System.out.println(ID.location() + "*** Command path : " + cmd_path);            
+            path = path + ":" + cmd_path;
+       } catch (Throwable t) {
+       }
+       return path;
+    }
+    
+    public File findFile(String systemPath, String filename) throws FileNotFoundException {
+        String[] paths = systemPath.split(File.pathSeparator);        
         for (String path : paths) {
             File testFile = new File(path + File.separator + filename);
             if (testFile.exists()) {
                 return testFile;
             }
         }
-
         throw new FileNotFoundException("Unable to find file: " + filename + " in " + Arrays.toString(paths));
     }
 
@@ -212,8 +245,11 @@ public class Solver {
             e.printStackTrace();
             System.exit(1);
         }
-
-        if (runSolver(ofile)) {
+        long t0 = System.currentTimeMillis();
+        boolean worked = runSolver(ofile);
+        long t1 = System.currentTimeMillis();
+        long duration = (t1 - t0);
+        if (worked) {
             try {
                 File ifile = workingDirectory.resolve(modelName + ".inputs").toFile();
                 File vfile = workingDirectory.resolve(modelName + ".vector").toFile();
@@ -267,7 +303,8 @@ public class Solver {
                 }
             }
         }
-        return new SolverResults(sln, fnLookup);
+        if (Debug.isEnabled()) System.out.println(ID.location() + "CEX " + sln);
+        return new SolverResults(duration,sln, fnLookup);
     }
 
 }

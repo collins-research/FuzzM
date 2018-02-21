@@ -12,10 +12,12 @@ import fuzzm.lustre.evaluation.PolyFunctionMap;
 import fuzzm.poly.PolyBool;
 
 public class PolyGeneralizationResult {
-	public PolyBool result;
-	public PolyFunctionMap fmap;
-	public PolyGeneralizationResult(PolyBool res, PolyFunctionMap fmap) {
+	public final PolyBool result;
+	public final PolyFunctionMap fmap;
+	public final ReMapExpr remap;
+	public PolyGeneralizationResult(PolyBool res, PolyFunctionMap fmap, ReMapExpr remap) {
 		this.result = res;
 		this.fmap = fmap;
+		this.remap = remap;
 	}
 }

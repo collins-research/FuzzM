@@ -31,7 +31,7 @@ public class ConcreteSimulationResults extends SimulationResults {
 
 	@Override
 	public boolean isSatisfactory() {
-		return ((BooleanTypeInterface) result).isTrue();
+		return ((BooleanTypeInterface) result).isAlwaysTrue();
 	}
 
 	@Override

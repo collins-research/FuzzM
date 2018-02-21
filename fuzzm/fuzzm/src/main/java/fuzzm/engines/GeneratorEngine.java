@@ -70,8 +70,8 @@ public class GeneratorEngine extends Engine {
 				// TODO: We probably want to re-architect this a bit
 				long startTime = System.currentTimeMillis();
 				long totalSize = 0;
-				int  size = gm.polyCEX.bytes();
-				Collection<VariableID> unbound = gm.polyCEX.unboundVariables(); // gm.generalizedCEX
+				int  size = gm.polyCEX.result.bytes();
+				Collection<VariableID> unbound = gm.polyCEX.result.unboundVariables(); // gm.generalizedCEX
 				for (@SuppressWarnings("unused") long n: gm) {
 					Map<VariableID,BigFraction> ctx = new HashMap<>();
 					for (VariableID vid: unbound) {

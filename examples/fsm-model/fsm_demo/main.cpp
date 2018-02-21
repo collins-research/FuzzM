@@ -9,6 +9,7 @@
 #include "fsm.hpp"
 #include <strings.h>
 #include <unistd.h>
+#include <iostream>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -58,7 +59,7 @@ int main() {
         for (;;) {
                 
                 recvlen = recvfrom(fd, buf, 12800, 0, (struct sockaddr *)&remaddr, &addrlen);
-                printf("received %d bytes\n", recvlen);
+                std::cerr << " + " << recvlen << " bytes" << std::endl;
                 if (recvlen > 0) {
                         fsm.evalPkt(buf, recvlen);
                 }

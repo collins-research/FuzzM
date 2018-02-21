@@ -23,24 +23,26 @@ import fuzzm.util.RatSignal;
  */
 public class CounterExampleMessage extends FeatureMessage {
 
-	public RatSignal counterExample;
-	public FunctionLookupEV fns;
-	public BooleanCtx   hyp;
-	public BooleanCtx   prop;
-	public RatSignal generalizationTarget;
+    public final double time;
+    public final RatSignal counterExample;
+	public final FunctionLookupEV fns;
+	public final BooleanCtx   hyp;
+	public final BooleanCtx   prop;
+	public final RatSignal generalizationTarget;
 	
-	public CounterExampleMessage(EngineName source, FeatureID id, BooleanCtx hyp, BooleanCtx  prop, RatSignal generalizationTarget, SolverResults sr, long sequence) {
-		super(source,QueueName.CounterExampleMessage,id,sequence);
+	public CounterExampleMessage(EngineName source, FeatureID id, String name, BooleanCtx hyp, BooleanCtx  prop, RatSignal generalizationTarget, SolverResults sr, long sequence) {
+		super(source,QueueName.CounterExampleMessage,id,name,sequence);
 		//assert(target.size() > 0);
 		this.counterExample = sr.cex;
 		this.fns = sr.fns;
 		this.hyp = hyp;
 		this.prop = prop;
 		this.generalizationTarget = generalizationTarget;
+		this.time = sr.time;
 	}
 	
 	public CounterExampleMessage(EngineName source, ConstraintMessage m, SolverResults sr) {
-		this(source, m.id,m.hyp,m.prop,m.generalizationTarget,sr,m.sequence);
+		this(source, m.id,m.name,m.hyp,m.prop,m.generalizationTarget,sr,m.sequence);
 	}
 	
 	@Override
@@ -50,7 +52,7 @@ public class CounterExampleMessage extends FeatureMessage {
 	
 	@Override
 	public String toString() {
-		return "Message: [CeX] " + sequence + ":" + id; // + " :\n" + counterExample.toString();
+		return "Message: [CeX] " + sequence + ":" + id + " Time = " + time/1000.0 + " s"; // + " :\n" + counterExample.toString();
 	}
 
 	@Override

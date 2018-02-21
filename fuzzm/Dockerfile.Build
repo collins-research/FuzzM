@@ -1,0 +1,20 @@
+FROM maven:3.5.2-jdk-8
+
+ARG proxy_host
+ARG proxy_port
+
+ENV proxy_host ${proxy_host}
+ENV proxy_port ${proxy_port}
+
+ADD fuzzm /root/fuzzm
+
+WORKDIR /root/fuzzm
+
+RUN \
+      mvn \
+      -Dhttp.proxyHost=${proxy_host} -Dhttp.proxyPort=${proxy_port} \
+      -Dhttps.proxyHost=${proxy_host} -Dhttps.proxyPort=${proxy_port} \
+      clean compile assembly:single
+
+ENV proxy_host "" 
+ENV proxy_port ""

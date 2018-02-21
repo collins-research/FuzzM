@@ -9,7 +9,15 @@ import sys
 
 MAX_PAYLOAD_LENGTH = 514;
 
-TFTP_MODEL_BODY_FORMAT = '''type uint16 = int;
+TFTP_MODEL_BODY_FORMAT = '''
+-- 
+-- Copyright (C) 2017, Rockwell Collins
+-- All rights reserved.
+-- 
+-- This software may be modified and distributed under the terms
+-- of the 3-clause BSD license.  See the LICENSE file for details.
+-- 
+type uint16 = int;
 
 const tftp_max_payload_size : int = %(max_payload_length)d;
 

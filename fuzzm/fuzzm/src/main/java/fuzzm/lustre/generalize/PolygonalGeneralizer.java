@@ -64,31 +64,44 @@ public class PolygonalGeneralizer {
 			}
 		}
 		PolyBool polyRes = simulator.simulateProperty(state, property);
+		if (! (polyRes.cex && !polyRes.isNegated())) {
+		    System.err.println(ID.location() + polyRes.toString());
+		    assert(false);
+		}
 		polyRes = polyRes.normalize();
-		if (Debug.logic()) System.out.println(ID.location() + "Generalization Result : " + polyRes);
+		if (Debug.isEnabled()) { 
+		    System.out.println(ID.location() + "Cex : " + cex);
+		    System.out.println(ID.location() + "Generalization Result : " + polyRes);
+		}
 		return polyRes;
 	}
 	
-	public static PolyGeneralizationResult generalizeInterface(EvaluatableSignal cex, String property, FunctionLookupEV fns, Program testMain) {
+	public static PolyGeneralizationResult generalizeInterface(EvaluatableSignal cex, String name, String property, FunctionLookupEV fns, Program testMain) {
 		PolyGeneralizationResult res;
 		synchronized (GlobalState.class) {
 			long startTime = System.currentTimeMillis();
 			try {
 				PolygonalGeneralizer pgen2 = new PolygonalGeneralizer(fns,testMain);			
 				PolyBool g2 = pgen2.generalize(cex,property);
+				assert(g2.cex && !g2.isNegated());
 				PolyFunctionMap fmap = pgen2.simulator.fmap;
-				res = new PolyGeneralizationResult(g2,fmap);
+				res = new PolyGeneralizationResult(g2,fmap,GlobalState.getReMap());
 			} catch (Throwable t) {
 				System.err.println(ID.location() + "Retrying failed PolyGeneralization ..");
 				t.printStackTrace();
 				Debug.setEnabled(true);
+				Debug.setProof(true);
 				try {
-					PolygonalGeneralizer pgen2 = new PolygonalGeneralizer(fns,testMain);			
+				    System.err.println(ID.location() + "Property    : " + name);
+                    System.err.println(ID.location() + "Initial CEX : " + cex);
+				    System.err.println(ID.location() + "Initial FNS : " + fns);
+                    PolygonalGeneralizer pgen2 = new PolygonalGeneralizer(fns,testMain);			
 					PolyBool g2 = pgen2.generalize(cex,property);
 					PolyFunctionMap fmap = pgen2.simulator.fmap;
-					res = new PolyGeneralizationResult(g2,fmap);
+					res = new PolyGeneralizationResult(g2,fmap,GlobalState.getReMap());
 				} catch (Throwable z) {
-					System.err.flush();
+				    System.err.flush();
+					System.exit(1);
 					throw z;
 				}
 			}

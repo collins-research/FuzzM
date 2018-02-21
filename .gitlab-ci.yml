@@ -1,0 +1,7 @@
+build:
+   tags:
+      - pi
+      - shell
+   script: 
+      - "docker build --no-cache --build-arg proxy_port=$PROXY_PORT --build-arg proxy_host=$PROXY_HOST fuzzm -t fuzzm"
+

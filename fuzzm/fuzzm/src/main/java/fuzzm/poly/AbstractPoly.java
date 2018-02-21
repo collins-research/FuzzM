@@ -34,6 +34,7 @@ abstract public class AbstractPoly implements Iterable<VariableID>, Comparable<A
 	public abstract BigFraction getConstant();
 	// Returns the leading variable in this poly.
 	// Throws an exception if this is constant.
+	public abstract Set<VariableID> getVariables();
 	public abstract VariableID leadingVariable();
 	public abstract VariableID trailingVariable();
 	public abstract BigFraction evaluateCEX();

@@ -8,17 +8,24 @@
  */
 package fuzzm.poly;
 
+import java.util.List;
+
 import fuzzm.lustre.evaluation.PolyFunctionMap;
 import fuzzm.solver.SolverResults;
 import fuzzm.util.RatSignal;
 
-public class NotPolyBool extends PolyBool {
+public class FalsePolyBool extends PolyBool {
 
-	protected NotPolyBool(boolean cex, VariableList body) {
+	protected FalsePolyBool(boolean cex, VariableList body) {
 		super(cex, body);
+	    assert(! cex);
 	}
 	
-	@Override
+	protected FalsePolyBool(VariableBoolean var) {
+        this(! var.cex, new VariableList(var));
+    }
+
+    @Override
 	public String toString() {
 		String res = "(not (\n ";
 		String delimit = "";
@@ -31,15 +38,15 @@ public class NotPolyBool extends PolyBool {
 
 	@Override
 	public String toACL2() {
-		String res = "(or\n";
+		String res = "(not (and\n";
 		for (Variable vc: body) {
-			res += vc.not().toACL2() + "\n";
+			res += vc.toACL2() + "\n";
 		}
-		return res + ")";
+		return res + "))";
 	}
 
 	@Override
-	protected boolean isNegated() {
+	public boolean isNegated() {
 		return true;
 	}
 
@@ -49,12 +56,12 @@ public class NotPolyBool extends PolyBool {
 	}
 
 	@Override
-	public boolean isFalse() {
+	public boolean isAlwaysFalse() {
 		return (body.size() == 0);
 	}
 
 	@Override
-	public boolean isTrue() {
+	public boolean isAlwaysTrue() {
 		return false;
 	}
 
@@ -65,7 +72,17 @@ public class NotPolyBool extends PolyBool {
 
 	@Override
 	public SolverResults optimize(SolverResults cex, PolyFunctionMap fmap, RatSignal target) {
-		throw new IllegalArgumentException();
+		return cex;
 	}
+
+    @Override
+    public List<Variable> getArtifacts() {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public List<Variable> getTargets() {
+        throw new IllegalArgumentException();
+    }
 	
 }

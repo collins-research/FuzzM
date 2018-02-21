@@ -69,6 +69,23 @@ public class ID {
 		return "_" + lhs + "_" + uid;
 	}
 	
+	public static String cleanString(String arg) {
+	    if (arg == null) return arg;
+        int size = arg.length();
+        String res = "";
+        for (int i=0;i<size;i++) {
+            char c = arg.charAt(i);
+            if (c == '|') {
+                res += "_";
+            } else if (c == '#') {
+                res += "_";
+            } else {
+                res += c;
+            }
+        }
+        return res;
+	}
+	
 	public static String encodeString(String arg) {
 		if (arg == null) return arg;
 		int size = arg.length();

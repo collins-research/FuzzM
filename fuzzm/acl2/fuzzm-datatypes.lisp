@@ -151,6 +151,25 @@
    (equal (fix-relation x) x))
   :hints (("Goal" :in-theory (enable fix-relation))))
 
+(def::und gt-relation-p (relation sig)
+  (declare (xargs :signature ((relation-p rationalp) booleanp)))
+  (let ((relation (fix-relation relation))
+        (sig      (rfix sig)))
+    (or (< 0 sig) (and (equal relation :inclusive) (= 0 sig)))))
+
+(def::und lt-relation-p (relation sig)
+  (declare (xargs :signature ((relation-p rationalp) booleanp)))
+  (let ((relation (fix-relation relation))
+        (sig      (rfix sig)))
+    (or (< sig 0) (and (equal relation :inclusive) (= 0 sig)))))
+
+(defthm gt-relation-p-negate
+  (implies
+   (rationalp sig)
+   (iff (gt-relation-p relation (- sig))
+        (lt-relation-p relation sig)))
+  :hints (("Goal" :in-theory (enable gt-relation-p lt-relation-p))))
+
 (def::und op-relation (op)
   (declare (xargs :signature ((op-p) relation-p)))
   (cond

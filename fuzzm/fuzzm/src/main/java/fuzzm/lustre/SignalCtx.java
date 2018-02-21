@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import fuzzm.util.FuzzMName;
+import fuzzm.util.FuzzmName;
 import jkind.lustre.BinaryExpr;
 import jkind.lustre.BinaryOp;
 import jkind.lustre.Expr;
@@ -24,7 +24,7 @@ import jkind.lustre.NamedType;
 public class SignalCtx extends ExprCtx {
 
 	private List<Expr> exprList = new ArrayList<>();
-	private Expr time = new IdExpr(FuzzMName.time);
+	private Expr time = new IdExpr(FuzzmName.time);
 			
 	public SignalCtx(NamedType type) {
 		super(type, ExprCtx.defaultValue(type));

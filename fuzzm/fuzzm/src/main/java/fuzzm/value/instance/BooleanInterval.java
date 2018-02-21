@@ -123,12 +123,12 @@ public class BooleanInterval extends BooleanIntervalType implements BooleanValue
 	}
 
 	@Override
-	public boolean isTrue() {
+	public boolean isAlwaysTrue() {
 		return false;
 	}
 
 	@Override
-	public boolean isFalse() {
+	public boolean isAlwaysFalse() {
 		return false;
 	}
 

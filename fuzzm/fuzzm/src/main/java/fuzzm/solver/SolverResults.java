@@ -15,10 +15,12 @@ public class SolverResults {
 
 	public RatSignal cex;
 	public FunctionLookupEV fns;
+	public long time;
 	
-	public SolverResults(RatSignal cex, FunctionLookupEV fns) {
+	public SolverResults(long time, RatSignal cex, FunctionLookupEV fns) {
 		this.cex = cex;
 		this.fns = fns;
+		this.time = time;
 	}
 
 	@Override

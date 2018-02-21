@@ -14,13 +14,16 @@ import fuzzm.engines.EngineName;
  * Messages with references to features
  */
 abstract public class FeatureMessage extends Message {
-	public FeatureID id;
-	public FeatureMessage(EngineName source, QueueName queue, FeatureID id, long sequence) {
+	public final FeatureID id;
+	public final String name;
+	public FeatureMessage(EngineName source, QueueName queue, FeatureID id, String name, long sequence) {
 		super(source,queue,sequence);
 		this.id = id;
+		this.name = name;
 	}
-	public FeatureMessage(EngineName source, QueueName queue, FeatureID id) {
+	public FeatureMessage(EngineName source, QueueName queue, FeatureID id, String name) {
 		super(source,queue);
 		this.id = id;
+		this.name = name;
 	}
 }

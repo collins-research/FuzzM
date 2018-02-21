@@ -11,22 +11,25 @@ package fuzzm.lustre.optimize;
 import fuzzm.lustre.generalize.PolyGeneralizationResult;
 import fuzzm.lustre.generalize.PolygonalGeneralizer;
 import fuzzm.solver.SolverResults;
+import fuzzm.util.Debug;
 import fuzzm.util.EvaluatableSignal;
+import fuzzm.util.ID;
+import fuzzm.util.ProofWriter;
 import fuzzm.util.RatSignal;
 import jkind.lustre.Program;
 
 public class PolygonalOptimizer {
 
-	public static SolverResults optimize(SolverResults sln, RatSignal target, String property, Program main) {
+	public static SolverResults optimize(SolverResults sln, RatSignal target, String name, String property, Program main) {
 		//System.out.println(ID.location() + sln);
 		EvaluatableSignal cex = sln.cex.evaluatableSignal();
 		
-		//Debug.setLogic(true);
-
-		PolyGeneralizationResult res = PolygonalGeneralizer.generalizeInterface(cex, property, sln.fns, main);
-		//System.out.println(ID.location() + "poly = " + res.result);
+		PolyGeneralizationResult res = PolygonalGeneralizer.generalizeInterface(cex, name, property, sln.fns, main);
+		// System.err.println(ID.location() + "Solution poly      = " + res.result);
 		SolverResults opsln = res.result.optimize(sln,res.fmap,target);
-		//System.out.println(ID.location() + opsln);
+		if (Debug.proof()) {
+		    ProofWriter.printEval(ID.location(), "optEval_" + name, res.result.toACL2(), opsln.cex.toACL2());
+		}		
 		return opsln;
 	}
 	

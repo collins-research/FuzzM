@@ -33,7 +33,7 @@ public class PolySimulationResults extends SimulationResults {
 
 	@Override
 	public boolean isSatisfactory() {
-		return (! ((BooleanTypeInterface) result).isFalse());
+		return (! ((BooleanTypeInterface) result).isAlwaysFalse());
 	}
 
 	@Override

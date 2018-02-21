@@ -9,11 +9,14 @@
 package fuzzm.heuristic;
 
 import fuzzm.lustre.BooleanCtx;
+import fuzzm.lustre.generalize.PolyGeneralizationResult;
 import fuzzm.util.RatSignal;
 
 public interface HeuristicInterface {
 
-	boolean objective();
+    String name();
+    
+    boolean objective();
 
 	BooleanCtx hyp();
 
@@ -28,9 +31,11 @@ public interface HeuristicInterface {
 	boolean ready();
 
 	// Resolve the feature as SAT
-	void sat(boolean objective, RatSignal counterExample, BooleanCtx bounds);
+	void sat(boolean objective, double time, RatSignal counterExample, PolyGeneralizationResult res);
 
 	// Resolve the feature as UNSAT
 	void unsat(boolean objective);
 
+	boolean isUNSAT();
+	
 }

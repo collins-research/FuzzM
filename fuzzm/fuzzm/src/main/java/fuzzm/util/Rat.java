@@ -131,7 +131,7 @@ public class Rat {
 	}
 	
 	private static BigFraction biasedRandom(boolean biased, int bias, BigFraction min, BigFraction max) {
-		double drnd = bias(oracle.nextDouble(),bias);
+		double drnd = biased ? bias(oracle.nextDouble(),bias) : oracle.nextDouble();
 		BigDecimal rnd = BigDecimal.valueOf(drnd);
 		BigFraction r = BigFraction.valueOf(rnd);
 		BigFraction offset = (max.subtract(min)).multiply(r);

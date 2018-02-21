@@ -127,13 +127,13 @@ public class PolyBooleanValue extends BooleanType implements PolyBooleanValueInt
 	// auxiliary
 	
 	@Override
-	public boolean isTrue() {
-		return value.isTrue();
+	public boolean isAlwaysTrue() {
+		return value.isAlwaysTrue();
 	}
 
 	@Override
-	public boolean isFalse() {
-		return value.isFalse();
+	public boolean isAlwaysFalse() {
+		return value.isAlwaysFalse();
 	}
 
 	@Override

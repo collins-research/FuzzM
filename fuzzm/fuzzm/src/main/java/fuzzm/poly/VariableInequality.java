@@ -10,12 +10,9 @@ package fuzzm.poly;
 
 abstract public class VariableInequality extends VariableRelation {
 
-	protected VariableInequality(VariableID name, boolean cex, RelationType relation, AbstractPoly poly, FeatureType feature) {
-		super(name,cex,relation,poly,feature);
+	protected VariableInequality(VariableID name, boolean cex, RelationType relation, AbstractPoly poly, FeatureType feature, TargetType target) {
+		super(name,cex,relation,poly,feature,target);
 	}
-	
-	@Override
-	abstract public VariableInequality not();
 	
 	abstract VariableInequality chooseBestCompliment(VariableInterval arg);
 	

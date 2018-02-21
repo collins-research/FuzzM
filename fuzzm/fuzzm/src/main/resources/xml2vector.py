@@ -35,13 +35,14 @@ def processFunctions(functions,ffp):
     for function in functions:
         inputs = function.findall('Input')
         output = function.find('Output')
-        name = function.get('name')
+        oname  = output.get('name')
+        ## Don't ask ..
+        name = function.get('name')[:-len(oname)-1]
         for functionvalue in function.findall('FunctionValue'):
-            ffp.write(name + " " + output.get('type') + " " + functionvalue.get('value'))
-            for arg in functionvalue.findall('ArgumentValue'):
-                argspec = function.find('Input[@name="' + arg.get('name') + '"]')
+            ffp.write(name + " " + output.get('type') + " " + functionvalue.find('OutputValue').text)
+            for (argspec,arg) in zip(inputs,functionvalue.findall('InputValue')):
                 argtype = argspec.get('type')
-                ffp.write(" " + argtype + " " + arg.get('value'))
+                ffp.write(" " + argtype + " " + arg.text)
             ffp.write("\n")
 
 ## Print all of the falsifiable properties
@@ -59,7 +60,7 @@ def processRoot(inputs,root,vfp,ffp):
                 keys = vector.keys()
                 missing = [input for input in inputs if input not in keys]
                 if missing:
-                    print "Missing Inputs : " + str(missing)
+                    print("Missing Inputs : " + str(missing))
                     assert(False)
                 values = [vector[input] for input in inputs]
                 dumpVector(values,vfp)
@@ -83,7 +84,7 @@ def processFile(model):
 
 def main():
     if (len(sys.argv) != 2):
-        print "Usage: xml2vector.py module"
+        print("Usage: xml2vector.py module")
         exit(1)
     processFile(sys.argv[1])
 

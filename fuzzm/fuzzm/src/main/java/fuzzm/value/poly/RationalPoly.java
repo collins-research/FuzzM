@@ -17,6 +17,10 @@ import fuzzm.poly.PolyBase;
 import fuzzm.poly.PolyBool;
 import fuzzm.poly.VariableID;
 import fuzzm.value.hierarchy.EvaluatableValue;
+import jkind.lustre.BinaryExpr;
+import jkind.lustre.BinaryOp;
+import jkind.lustre.CastExpr;
+import jkind.lustre.Expr;
 import jkind.lustre.NamedType;
 import jkind.lustre.Type;
 import jkind.util.BigFraction;
@@ -65,6 +69,12 @@ public class RationalPoly extends PolyEvaluatableValue {
 			PolyBool gt0 = PolyBool.greater0(mp.negate()).not();
 			PolyBool ltD = PolyBool.less0(mp.subtract(new BigFraction(D.abs())));
 			GlobalState.addConstraint(gt0.and(ltD));
+		    Expr INT = GlobalState.getExpr();
+		    int step = GlobalState.getStep();
+		    GlobalState.addReMap(k, step, INT);
+		    Expr RAT = ((CastExpr) INT).expr;
+		    Expr REM = new BinaryExpr(RAT,BinaryOp.MINUS,new CastExpr(NamedType.REAL,INT));
+		    GlobalState.addReMap(m, step, REM);
 			return new IntegerPoly(new PolyBase(k));
 		}
 		throw new IllegalArgumentException();

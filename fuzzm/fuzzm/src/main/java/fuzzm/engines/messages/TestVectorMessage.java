@@ -21,13 +21,13 @@ public class TestVectorMessage extends FeatureMessage {
 
 	public RatSignal signal;
 
-	public TestVectorMessage(EngineName source, FeatureID id, RatSignal signal, long sequence) {
-		super(source,QueueName.TestVectorMessage,id,sequence);
+	public TestVectorMessage(EngineName source, FeatureID id, String name, RatSignal signal, long sequence) {
+		super(source,QueueName.TestVectorMessage,id,name,sequence);
 		this.signal = signal;
 	}
 	
 	public TestVectorMessage(EngineName source, GeneralizedMessage m, RatSignal signal) {
-		this(source,m.id,signal,m.sequence);
+		this(source,m.id,m.name,signal,m.sequence);
 	}
 	
 	@Override

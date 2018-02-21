@@ -26,23 +26,29 @@ public class VariableBoolean extends Variable {
     // 
     
     // If the vid is bound to false, the variable must be negated.
+    TargetType target;
     
     private static boolean isTrue(BigFraction f) {
         return (f.compareTo(BigFraction.ZERO) == 0) ? false : true;
     }
     
-    private boolean isNegated() {
+    public boolean isNegated() {
         return cex != isTrue(vid.cex);
     }
     
-    private VariableBoolean(VariableID vid, boolean cex) {
+    private VariableBoolean(VariableID vid, boolean cex, TargetType target) {
 		super(vid,cex);
+		this.target = target;
 	}
 
     public VariableBoolean(VariableID vid) {
-        this(vid, isTrue(vid.cex));
+        this(vid, true, TargetType.CHAFF);
     }
 
+    public VariableBoolean(VariableBoolean src, TargetType target) {
+        this(src.vid,src.cex,target);
+    }
+    
 	@Override
 	public RestrictionResult andTrue(Variable right) {
 		return ((VariableInterface) right).andTrue2(this);
@@ -79,52 +85,22 @@ public class VariableBoolean extends Variable {
 		return new RestrictionResult(this);
 	}
 
-	@Override
-	public Variable andFalse(Variable right) {
-		return ((VariableInterface) right).andFalse2(this);
-	}
-
-	@Override
-	public Variable andFalse2(VariableEquality left) {
-		// TODO Auto-generated method stub
-		throw new IllegalArgumentException();
-	}
-
-	@Override
-	public Variable andFalse2(VariableInterval left) {
-		// TODO Auto-generated method stub
-		throw new IllegalArgumentException();
-	}
-
-	@Override
-	public Variable andFalse2(VariableLess left) {
-		// TODO Auto-generated method stub
-		throw new IllegalArgumentException();
-	}
-
-	@Override
-	public Variable andFalse2(VariableGreater left) {
-		// TODO Auto-generated method stub
-		throw new IllegalArgumentException();
-	}
-
-	@Override
-	public Variable andFalse2(VariableBoolean left) {
-		assert(this.cex == left.cex);
-		assert(this.vid == left.vid);
-        return this;
-	}
-
     @Override
     public String toACL2() {
-        // TODO Auto-generated method stub
-        throw new IllegalArgumentException();
+        return toACL2(isTrue(vid.cex) ? "t" : "nil");
     }
-
+    
+    @Override
+    public String toACL2(String cex) {
+        // So .. the actual cex value is encoded in the negation.
+        String name = vid.toACL2(cex);
+        return isNegated() ? "(not " + name + ")" : name;
+    }
+    
     @Override
     public String toString() {
         String name = vid.toString();
-        return isNegated() ? "(! " + name + ")" : name;
+        return isNegated() ? "(! " + target.toString() + name + ")" : (target.toString() + name);
     }
 
 	@Override
@@ -133,11 +109,10 @@ public class VariableBoolean extends Variable {
 	}
 
 	@Override
-	public Variable not() {
-	    //System.out.println(ID.location() + "Negating Boolean Variable " + toString());
-		return new VariableBoolean(this.vid,! cex);
+	public boolean isArtifact() {
+	    return false;
 	}
-
+	
 	@Override
 	public boolean requiresRestriction() {
 		return false;
@@ -231,6 +206,122 @@ public class VariableBoolean extends Variable {
     public RestrictionResult mustContain(AbstractPoly v) {
         // TODO Auto-generated method stub
         throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable target(boolean trueL, Variable right) {
+        // !right => (!trueL ^ this)  when trueL = false
+        return new VariableBoolean(this,(trueL == false) ? TargetType.TARGET : this.target);
+    }
+
+    @Override
+    public Variable target2(boolean trueL, VariableEquality left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable target2(boolean trueL, VariableInterval left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable target2(boolean trueL, VariableLess left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable target2(boolean trueL, VariableGreater left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable target2(boolean trueL, VariableBoolean left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable minSet(Variable right) {
+        return this;
+    }
+
+    @Override
+    public Variable minSet2(VariableEquality left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable minSet2(VariableInterval left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable minSet2(VariableLess left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable minSet2(VariableGreater left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable minSet2(VariableBoolean left) {
+        return this;
+    }
+
+    @Override
+    public boolean isTarget() {
+        return target == TargetType.TARGET;
+    }
+
+    @Override
+    public Variable maxSet(Variable right) {
+        return this;
+    }
+
+    @Override
+    public Variable maxSet2(VariableEquality left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable maxSet2(VariableInterval left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable maxSet2(VariableLess left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable maxSet2(VariableGreater left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable maxSet2(VariableBoolean left) {
+        return this;
+    }
+
+    @Override
+    public RestrictionResult andTrue2(VariablePhantom left) {
+        return new RestrictionResult(this);
+    }
+
+    @Override
+    public Variable minSet2(VariablePhantom left) {
+        return this;
+    }
+
+    @Override
+    public Variable maxSet2(VariablePhantom left) {
+        return this;
+    }
+
+    @Override
+    public Variable target2(boolean trueL, VariablePhantom left) {
+        return Variable.target(this, true, left.v, trueL);
     }
 
 }

@@ -14,9 +14,9 @@ A relay for the FSM is [here](relay.py).  Note that this relay uses
 
 ## Running The Example
 
-Running this example is simplest using [Docker](../README.md).
+Running this example is simplest using [Docker](../../INSTALLING.md).
 
-To start the example, run the following commands from the `FuzzM/fsm-model/` directory:
+To start the example, run the following commands from the `FuzzM/examples/fsm-model/` directory:
 
 ```bash
 docker-compose up

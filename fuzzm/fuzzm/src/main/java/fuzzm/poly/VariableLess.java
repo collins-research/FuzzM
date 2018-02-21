@@ -14,22 +14,23 @@ import java.util.Map;
 import fuzzm.util.Rat;
 import fuzzm.value.instance.RationalInfinity;
 import fuzzm.value.instance.RationalValue;
+import jkind.lustre.BinaryOp;
 import jkind.lustre.NamedType;
 import jkind.util.BigFraction;
 
 public class VariableLess extends VariableInequality {
 
-	protected VariableLess(VariableID name, boolean cex, RelationType relation, AbstractPoly poly, FeatureType feature) {
-		super(name,cex,relation,poly,feature);
+	protected VariableLess(VariableID name, boolean cex, RelationType relation, AbstractPoly poly, FeatureType feature, TargetType target) {
+		super(name,cex,relation,poly,feature,target);
 		assert((relation == RelationType.EXCLUSIVE) ? cex == (name.cex.compareTo(poly.evaluateCEX()) < 0) : cex == (name.cex.compareTo(poly.evaluateCEX()) <= 0));
 	}
 	
-	protected VariableLess(VariableID name, AbstractPoly poly, boolean cex) {
-		this(name,cex,RelationType.EXCLUSIVE,poly,FeatureType.FEATURE);
+	protected VariableLess(VariableID name, AbstractPoly poly, boolean cex, TargetType target) {
+		this(name,cex,RelationType.EXCLUSIVE,poly,FeatureType.FEATURE,target);
 	}
 	
-	protected VariableLess(VariableID name, AbstractPoly poly, RelationType relation, boolean cex) {
-		this(name,cex,relation,poly,FeatureType.FEATURE);
+	protected VariableLess(VariableID name, AbstractPoly poly, RelationType relation, boolean cex, TargetType target) {
+		this(name,cex,relation,poly,FeatureType.FEATURE,target);
 	}
 //
 //	protected VariableLess(VariableID name, RelationType relation, AbstractPoly poly, FeatureType feature, boolean cex) {
@@ -40,14 +41,14 @@ public class VariableLess extends VariableInequality {
 //		this(name,source.listOp,relation,poly,FeatureType.NONFEATURE,cex,source.context);
 //	}
 //	
-	public VariableLess(VariableInequality source, boolean cex, RelationType relation) {
-		this(source.vid,cex,relation,source.poly,source.feature);
-	}
-//	
-//	public VariableLess(VariableBound source, BooleanContext context) {
-//		this(source.name,context.listOp,source.relation,source.poly,source.feature,source.cex,context);
+//	public VariableLess(VariableInequality source, boolean cex, RelationType relation) {
+//		this(source.vid,cex,relation,source.poly,source.feature);
 //	}
-	
+//	
+	public VariableLess(VariableLess source, TargetType target) {
+	    this(source.vid,source.cex,source.relation,source.poly,source.feature,target);
+	}
+
 //	// conjoin()
 //	@Override
 //	public VariableConstraint newConstraint(VariableID name, RelationType relation, AbstractPoly poly, boolean cex) {
@@ -62,32 +63,33 @@ public class VariableLess extends VariableInequality {
 
 	@Override
 	public String toACL2() {
-		return "(<" + ((relation == RelationType.INCLUSIVE) ? "= " : " ") + "(id ," + vid + " " + vid.cex + ")" + poly.toACL2() + ")";
+		return toACL2(vid.cex.toString());
 	}
+
+    @Override
+    public String toACL2(String cex) {
+        return "(<" + ((relation == RelationType.INCLUSIVE) ? "= " : " ") + vid.toACL2(cex) + poly.toACL2() + ")";
+    }
 
 	@Override
 	public String toString() {
-		return vid + " <" + ((relation == RelationType.INCLUSIVE) ? "= " : " ") + poly + statusString();
+		return vid + opString(VariableLocation.LEFT,target.toString()) + poly + statusString();
 	}
 
 	@Override
 	public String cexString() {
-		return vid.cex + " <" + ((relation == RelationType.INCLUSIVE) ? "= " : " ") + poly.cexString();
+		return vid.cex + opString(VariableLocation.LEFT,target.toString()) + poly.cexString();
 	}
 
-	@Override
-	protected String opString(VariableLocation location) {
-		return (location.equals(VariableLocation.LEFT) ? " <" : " >") + ((relation == RelationType.INCLUSIVE) ? "= " : " ");
-	}
+    @Override
+    protected String opString(VariableLocation location, String target) {
+        String inclusive = ((relation == RelationType.INCLUSIVE) ? "=" : "");
+        return (location.equals(VariableLocation.LEFT) ? " " + target + "<" + inclusive + " " : " " + inclusive + ">" + target + " ");
+    }
 
 	@Override
 	protected String polyString() {
 		return poly.toString();
-	}
-
-	@Override
-	public VariableGreater not() {
-		return new VariableGreater(this,! cex,relation.not());
 	}
 
 	@Override
@@ -118,7 +120,7 @@ public class VariableLess extends VariableInequality {
 	// ACL2: (def::trueAnd andTrue-variableGreater-variableLess (x y cex)
 	@Override
 	public RestrictionResult andTrue2(VariableGreater left) {
-		return new RestrictionResult(new VariableInterval(left,this,OpType.AND));
+		return new RestrictionResult(new VariableInterval(left,this));
 	}
 
 	// ACL2: (def::un chooseBestComplement-variabeLess-variableInterval (x y)
@@ -149,42 +151,7 @@ public class VariableLess extends VariableInequality {
 	}
 
 	@Override
-	public Variable andFalse(Variable x) {
-		System.out.println("LT.andFalse2(?)");
-		assert(!cex && !x.cex);
-		Variable res = ((VariableInterface) x).andFalse2(this);
-		return res;
-	}
-
-	@Override
-	public Variable andFalse2(VariableEquality left) {
-		return left.andFalse2(this);
-	}
-
-	@Override
-	public Variable andFalse2(VariableInterval left) {
-		return left.andFalse2(this);
-	}
-
-	@Override
-	public Variable andFalse2(VariableLess left) {
-		return better(this,left);
-	}
-
-	@Override
-	public Variable andFalse2(VariableGreater left) {
-		return new VariableInterval(left,this,OpType.AND);
-	}
-
-	@Override
 	public RestrictionResult andTrue2(VariableBoolean left) {
-		// TODO Auto-generated method stub
-		throw new IllegalArgumentException();
-	}
-
-	@Override
-	public Variable andFalse2(VariableBoolean left) {
-		// TODO Auto-generated method stub
 		throw new IllegalArgumentException();
 	}
 
@@ -199,7 +166,7 @@ public class VariableLess extends VariableInequality {
 		assert(slackIntegerBounds());
 		BigInteger  L = this.poly.leastCommonDenominator();
 		if ((this.relation == RelationType.EXCLUSIVE) && (this.poly.constantLCDContribution().compareTo(BigInteger.ONE) == 0)) {
-			return new VariableLess(vid, this.poly.subtract(BigFraction.ONE.divide(L)), RelationType.INCLUSIVE, cex);
+			return new VariableLess(vid, this.poly.subtract(BigFraction.ONE.divide(L)), RelationType.INCLUSIVE, cex, target);
 		}
 		BigInteger  G = this.poly.constantLCDContribution();
 		L = L.divide(G);
@@ -207,7 +174,7 @@ public class VariableLess extends VariableInequality {
 		AbstractPoly res = this.poly.subtract(C);
 		C = Rat.roundDown(C.multiply(L));
 		res = res.add(C.divide(L));
-		return new VariableLess(vid,res,RelationType.INCLUSIVE,cex);
+		return new VariableLess(vid,res,RelationType.INCLUSIVE,cex, target);
 	}
 
 	@Override
@@ -219,7 +186,7 @@ public class VariableLess extends VariableInequality {
 
 	@Override
 	public VariableLess rewrite(Map<VariableID, AbstractPoly> rewrite) {
-		return new VariableLess(vid, cex, relation, poly.rewrite(rewrite), feature);
+		return new VariableLess(vid, cex, relation, poly.rewrite(rewrite), feature, target);
 	}
 	
 	@Override
@@ -239,9 +206,147 @@ public class VariableLess extends VariableInequality {
         if (diff.isConstant()) {
             return new RestrictionResult(this);
         } else {
-            VariableBound res = VariableBound.solvePolyGreater0(diff, relation, FeatureType.NONFEATURE, cex);
+            VariableBound res = VariableBound.solvePolyGreater0(diff, relation, cex, FeatureType.NONFEATURE, target);
             return new RestrictionResult(this,res);
         }
+    }
+    
+    @Override
+    public Variable target(boolean trueL, Variable right) {
+        return right.target2(!trueL, this);
+    }
+
+    @Override
+    public VariableLess target2(boolean trueL, VariableInterval left) {
+        return (VariableLess) (trueL ? this.target2(trueL,left.lt) : Variable.target(this,true,left.gt,!trueL));
+    }
+
+    @Override
+    public VariableLess target2(boolean trueL, VariableEquality left) {
+        if (trueL) return this;
+        int cmp = this.poly.evaluateCEX().compareTo(left.poly.evaluateCEX());
+        boolean target = (cmp < 0) || ((cmp == 0) && (this.relation == RelationType.EXCLUSIVE));
+        return target ? new VariableLess(this,TargetType.TARGET) : this;
+    }
+
+    @Override
+    public VariableLess target2(boolean trueL, VariableGreater left) {
+        if (trueL) return this;
+        int cmp = this.poly.evaluateCEX().compareTo(left.poly.evaluateCEX());
+        boolean target = (cmp < 0) || ((cmp == 0) && ((this.relation == RelationType.EXCLUSIVE) || (left.relation == RelationType.EXCLUSIVE)));
+        return target ? new VariableLess(this,TargetType.TARGET) : this;
+    }
+
+    @Override
+    public VariableLess target2(boolean trueL, VariableLess left) {
+        if (! trueL) return this;
+        int cmp = this.poly.evaluateCEX().compareTo(left.poly.evaluateCEX());
+        boolean target = (cmp < 0) || ((cmp == 0) && ((this.relation == RelationType.EXCLUSIVE) || (left.relation == RelationType.INCLUSIVE)));
+        return target ? new VariableLess(this,TargetType.TARGET) : this;
+    }
+
+    @Override
+    public Variable target2(boolean trueL, VariableBoolean left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable minSet(Variable right) {
+        return right.minSet2(this);
+    }
+
+    @Override
+    public Variable minSet2(VariableEquality left) {
+        return left;
+    }
+
+    @Override
+    public Variable minSet2(VariableInterval left) {
+        return new VariableInterval(left.gt,(VariableLess) this.minSet2(left.lt));
+    }
+
+    @Override
+    public Variable minSet2(VariableLess left) {
+        int cmp = left.poly.evaluateCEX().compareTo(this.poly.evaluateCEX());
+        // Return the smallest bound ..
+        if ((cmp < 0) || ((cmp == 0) && this.relation == RelationType.INCLUSIVE)) {
+            return left;
+        }
+        return this;
+    }
+
+    @Override
+    public Variable minSet2(VariableGreater left) {
+        return new VariableInterval(left,this);
+    }
+
+    @Override
+    public Variable minSet2(VariableBoolean left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable maxSet(Variable right) {
+        return right.maxSet2(this);
+    }
+
+    @Override
+    public Variable maxSet2(VariableEquality left) {
+        return this;
+    }
+
+    @Override
+    public Variable maxSet2(VariableInterval left) {
+        return new VariableInterval(left.gt,(VariableLess) this.maxSet2(left.lt));
+    }
+
+    @Override
+    public Variable maxSet2(VariableLess left) {
+        int cmp = left.poly.evaluateCEX().compareTo(this.poly.evaluateCEX());
+        if ((cmp < 0) || ((cmp == 0) && this.relation == RelationType.INCLUSIVE)) {
+            return this;
+        }
+        return left;
+    }
+
+    @Override
+    public Variable maxSet2(VariableGreater left) {
+        return new VariableInterval(left,this);
+    }
+
+    @Override
+    public Variable maxSet2(VariableBoolean left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public RestrictionResult andTrue2(VariablePhantom left) {
+        return new RestrictionResult(Variable.target(this, true, left.v, false));
+    }
+
+    @Override
+    public Variable minSet2(VariablePhantom left) {
+        return this;
+    }
+
+    @Override
+    public Variable maxSet2(VariablePhantom left) {
+        return this;
+    }
+
+    @Override
+    public Variable target2(boolean trueL, VariablePhantom left) {
+        return Variable.target(this, true, left.v, trueL);
+    }
+
+    @Override
+    public VariableRelation setTarget(TargetType target) {
+        return (isTarget() || target == TargetType.CHAFF) ? this : new VariableLess(this,TargetType.TARGET);
+    }
+
+    @Override
+    public BinaryOp binaryOp() {
+        return (relation == RelationType.EXCLUSIVE) ? BinaryOp.LESS : BinaryOp.LESSEQUAL;
     }
 
 }

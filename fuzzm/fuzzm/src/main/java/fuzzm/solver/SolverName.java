@@ -41,7 +41,7 @@ public enum SolverName {
     	return solvers;
     }
     
-    public static final List<SolverName> availableSolvers = removeYICES(SolverUtil.availableSolvers(true).stream().map(x -> asSolverName(x)).collect(Collectors.toList()));
+    public static final List<SolverName> availableSolvers = removeYICES(SolverUtil.availableSolvers().stream().map(x -> asSolverName(x)).collect(Collectors.toList()));
     
     public static SolverName asSolverName(SolverOption solver) {
     	switch (solver) {

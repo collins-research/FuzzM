@@ -11,14 +11,14 @@ package fuzzm.util;
 public class Debug {
 
 	private static boolean enabled = false;
-	private static boolean logic   = false;
+	private static boolean proof   = false;
 
 	public static boolean isEnabled() {
 		return enabled;
 	}
 
-	public static boolean logic() {
-		return logic;
+	public static boolean proof() {
+		return proof;
 	}
 
 	public static void setEnabled(boolean enabled) {
@@ -27,9 +27,9 @@ public class Debug {
 		Debug.enabled = enabled;
 	}
 
-	public static void setLogic(boolean enabled) {
-		if ((! Debug.logic) && enabled) System.out.println(ID.location(1) + "Enabling Logic ..");
-		if (Debug.logic && (! enabled)) System.out.println(ID.location(1) + "Disabling Logic.");
-		Debug.logic = enabled;
+	public static void setProof(boolean enabled) {
+		if ((! Debug.proof) && enabled) System.out.println(ID.location(1) + "Enabling Logic ..");
+		if (Debug.proof && (! enabled)) System.out.println(ID.location(1) + "Disabling Logic.");
+		Debug.proof = enabled;
 	}
 }

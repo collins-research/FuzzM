@@ -8,23 +8,23 @@
  */
 package fuzzm.poly;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import fuzzm.lustre.SignalName;
 import fuzzm.lustre.evaluation.PolyFunctionMap;
 import fuzzm.solver.SolverResults;
-import fuzzm.util.Debug;
+import fuzzm.util.FuzzMInterval;
 import fuzzm.util.ID;
 import fuzzm.util.IntervalVector;
-import fuzzm.util.FuzzMInterval;
-import fuzzm.util.ProofWriter;
 import fuzzm.util.Rat;
 import fuzzm.util.RatSignal;
 import fuzzm.util.RatVect;
@@ -51,13 +51,13 @@ public class VariableList extends LinkedList<Variable> {
 		addLast(c);
 	}
 	
-	public VariableList not() {
-		VariableList res = new VariableList();
-		for (Variable vc: this) {
-			res.addLast(vc.not());
-		}
-		return res;
-	}
+//	public VariableList not() {
+//		VariableList res = new VariableList();
+//		for (Variable vc: this) {
+//			res.addLast(vc.not());
+//		}
+//		return res;
+//	}
 	
 	@Override
 	public boolean add(Variable b) {
@@ -117,23 +117,101 @@ public class VariableList extends LinkedList<Variable> {
 		}
 		super.addLast(b);
 	}
+
+	   public static VariableList andTF(VariableList x, VariableList y) {
+	        // andTF: Here T and F refer to the polarity of the associated
+	        // polyBool.  y is, therefore, an implicitly negated 'or'
+	        // expression.  We will be discarding all of x.
+	        if (x.isEmpty()) return y;
+	        if (y.isEmpty()) return y;
+	        VariableList res = new VariableList();
+	        Iterator<Variable> xit = x.iterator();
+	        Iterator<Variable> yit = y.iterator();
+	        Variable xv = xit.next();
+	        Variable yv = yit.next();
+	        while (true) {
+	            int cmp = xv.vid.compareTo(yv.vid);
+	            if (cmp > 0) {
+	                res.addLast(yv);
+	                if (! yit.hasNext()) {
+	                    res.addLast(new VariablePhantom(xv));
+	                    break;
+	                }
+	                yv = yit.next();
+	            } else if (cmp < 0){
+	                res.addLast(new VariablePhantom(xv));
+	                if (! xit.hasNext()) {
+	                    res.addLast(yv);
+	                    break;
+	                }
+	                xv = xit.next();
+	            } else {
+	                Variable z = Variable.target(yv,false,xv,true);
+	                res.addLast(z);
+	                if (! (xit.hasNext() && yit.hasNext())) break;
+	                xv = xit.next();
+	                yv = yit.next();
+	            }
+	        }
+	        while (yit.hasNext()) {
+	            res.addLast(yit.next());
+	        }
+	        return res;
+	    }
 	
-	static RestrictionResult andTrue(Variable x, Variable y) {
-		RestrictionResult res = x.andTrue(y);
-		if (Debug.isEnabled()) {
-			String xacl2 = x.toACL2();
-			String yacl2 = y.toACL2();
-			String racl2 = res.toACL2();
-			ProofWriter.printThms("andTrue",xacl2,yacl2, racl2); 
-		}
-		return res;
+	public static VariableList andFF(VariableList x, VariableList y) {
+	    // andFF: So we have the option of choosing one or the other
+	    // or of conjoining both.  One might argue that, to keep the
+	    // solution space as large as possible, one should simply
+	    // discard one list or the other.  However, when we consider
+	    // sampling, the false space gives us information about which
+	    // constraints to TARGET.
+        if (x.isEmpty()) return y;
+        if (y.isEmpty()) return x;
+        VariableList res = new VariableList();
+        Iterator<Variable> xit = x.iterator();
+        Iterator<Variable> yit = y.iterator();
+        Variable xv = xit.next();
+        Variable yv = yit.next();
+        while (true) {
+            int cmp = xv.vid.compareTo(yv.vid);
+            if (cmp > 0) {
+                res.addLast(yv);
+                if (! yit.hasNext()) {
+                    res.addLast(xv);
+                    break;
+                }
+                yv = yit.next();
+            } else if (cmp < 0){
+                res.addLast(xv);
+                if (! xit.hasNext()) {
+                    res.addLast(yv);
+                    break;
+                }
+                xv = xit.next();
+            } else {
+                Variable z = Variable.minSet(xv,yv);
+                res.addLast(z);
+                if (! (xit.hasNext() && yit.hasNext())) break;
+                xv = xit.next();
+                yv = yit.next();
+            }
+        }
+        while (xit.hasNext()) {
+            res.addLast(xit.next());
+        }
+        while (yit.hasNext()) {
+            res.addLast(yit.next());
+        }
+        return res;
 	}
 	
-	public static VariableList and(AndType andType, VariableList x, VariableList y) {
-		VariableList ctx = new VariableList();
+	
+	public static VariableList andTT(VariableList x, VariableList y) {
 		if (x.isEmpty()) return y;
 		if (y.isEmpty()) return x;
-		Iterator<Variable> xit = x.iterator();
+		VariableList ctx = new VariableList();
+        Iterator<Variable> xit = x.iterator();
 		Iterator<Variable> yit = y.iterator();
 		Variable xv = xit.next();
 		Variable yv = yit.next();
@@ -161,17 +239,12 @@ public class VariableList extends LinkedList<Variable> {
 				}
 				xv = xit.next();
 			} else {
-				if (andType == AndType.TRUE) {
-					RestrictionResult rr = andTrue(xv,yv);
-					//if (Debug.isEnabled()) System.out.println(ID.location() + "(" + xv + " and " + yv + ") = " + rr.newConstraint);
-					for (Variable r: rr.restrictionList) {
-						ctx = restrict(r,ctx.iterator());
-					}
-					ctx.addFirstRev(rr.newConstraint);
-				} else {
-					//if (Debug.isEnabled()) System.out.println("Here : (" + xv + " and " + yv + ")");
-					ctx.addFirstRev(xv.andFalse(yv));
-				}
+			    RestrictionResult rr = Variable.andTrue(xv,yv);
+			    //if (Debug.isEnabled()) System.out.println(ID.location() + "(" + xv + " and " + yv + ") = " + rr.newConstraint);
+			    for (Variable r: rr.restrictionList) {
+			        ctx = restrict(r,ctx.iterator());
+			    }
+			    ctx.addFirstRev(rr.newConstraint);
 				if (! (xit.hasNext() && yit.hasNext())) break;
 				xv = xit.next();
 				yv = yit.next();
@@ -205,7 +278,7 @@ public class VariableList extends LinkedList<Variable> {
 					res.addLastRev(c);
 					c = xv;
 				} else {
-					RestrictionResult rr = andTrue(xv,c);
+					RestrictionResult rr = Variable.andTrue(xv,c);
 					//if (Debug.isEnabled()) System.out.println(ID.location() + "("+xv+" ^ "+c+") = " + rr.newConstraint);
 					for (Variable vc: rr.restrictionList) {
 						VariableList pres = restrict(vc,xit);
@@ -234,7 +307,7 @@ public class VariableList extends LinkedList<Variable> {
 				VariableEquality veq = (VariableEquality) v;
 				if (veq.relation == RelationType.INCLUSIVE) {
 					rewrite.put(veq.vid, veq.poly);
-					keep = (veq.vid.type != VariableType.AUXILIARY);
+					keep = (veq.vid.role != VariableRole.AUXILIARY);
 				}
 			}
 			if (keep) res.addLast(v);
@@ -254,6 +327,9 @@ public class VariableList extends LinkedList<Variable> {
 				//System.out.println(ID.location() + "Generalization size : " + x.size());
 				//System.out.println(ID.location() + x);
 				Variable v = x.poll();
+				if (v instanceof VariablePhantom) {
+				    continue;
+				}
 				if (v.implicitEquality()) {
 					//System.out.println(ID.location() + "Implicit Equality : " + v);
 					v = v.toEquality();
@@ -288,18 +364,18 @@ public class VariableList extends LinkedList<Variable> {
 		return x;
 	}
 	
-	public VariableList chooseAndNegateOne() {
-		Variable one = null;
-		int max = 0;
-		for (Variable v : this) {
-			if (v.countFeatures() >= max) {
-				one = v;
-				max = v.countFeatures();
-			}
-		}
-		assert(one != null);
-		return new VariableList(one.not());
-	}
+//	public VariableList chooseAndNegateOne() {
+//		Variable one = null;
+//		int max = 0;
+//		for (Variable v : this) {
+//			if (v.countFeatures() >= max) {
+//				one = v;
+//				max = v.countFeatures();
+//			}
+//		}
+//		assert(one != null);
+//		return new VariableList(one.not());
+//	}
 
 	public RatSignal randomVector(boolean biased, BigFraction Smin, BigFraction Smax, IntervalVector span, Map<VariableID,BigFraction> ctx) {
 		//int tries = 100;
@@ -361,14 +437,17 @@ public class VariableList extends LinkedList<Variable> {
 				}
 				// We should probably do this for all the variable types ..
 				for (TypedName z : span.keySet()) {
-					if (z.type == NamedType.BOOL) {
-						for (RatVect rv: res) {
-							if (! rv.containsKey(z)) {
-								rv.put(z, GlobalState.oracle().nextBoolean() ? BigFraction.ONE : BigFraction.ZERO);
+					for (RatVect rv: res) {
+						if (! rv.containsKey(z)) {
+						    if (z.type == NamedType.BOOL) {
+						        rv.put(z, GlobalState.oracle().nextBoolean() ? BigFraction.ONE : BigFraction.ZERO);
+							} else {
+							    rv.put(z, Rat.biasedRandom(z.type, biased, 0, span.get(z).min, span.get(z).max));
 							}
 						}
 					}
 				}
+				//System.out.println(ID.location() + "Vector : "+ res);
 				return res;
 			} catch (EmptyIntervalException e) {
 				throw new IllegalArgumentException(e);
@@ -410,7 +489,8 @@ public class VariableList extends LinkedList<Variable> {
 		while (! z.isEmpty()) {
 		    Variable v = z.poll();
 			RegionBounds interval;
-			BigFraction value;            
+			BigFraction value; 
+			if (v instanceof VariablePhantom) continue;
 			if (v instanceof VariableBoolean) {
 			    value = v.vid.cex;
 			    int time = v.vid.name.time;
@@ -430,10 +510,15 @@ public class VariableList extends LinkedList<Variable> {
 			    int time = v.vid.name.time;
 			    TypedName tname = v.vid.name.name;
 			    NamedType type = v.vid.name.name.type;
+			    // TODO: Using only variable type I think we want to differentiate between
+			    // variables that map back into the model and those that do not.  Here, 
+			    // especially, we want to know the variables used in UF generalization.
 			    if (time >= 0) {
 			        value = interval.optimize(type,target.get(time).get(tname));
 			        res.put(v.vid.name.time,v.vid.name.name,value);
 			    } else {
+			        // You could use a random value here .. because what we are doing is kinda silly.
+			        // Or just leave it unconstrained.
 			        value = interval.optimize(type, v.vid.getCex());
 			        tempVars.put(tname, value);
 			    }
@@ -448,7 +533,7 @@ public class VariableList extends LinkedList<Variable> {
 			// assert(v.evalCEX(ctx)) : "Failure to preserve " + v + " with " + value + " under " + ctx;
 		}
 		fmap.updateFunctions(tempVars, sln.fns);
-		return new SolverResults(res,sln.fns);		
+		return new SolverResults(sln.time,res,sln.fns);		
 	}
 	
 	public int[] gradiantToDirectionMatrix(AbstractPoly gradiant) {
@@ -486,5 +571,33 @@ public class VariableList extends LinkedList<Variable> {
 		}
 		return ctx;
 	}
+
+    public List<Variable> getTargets() {
+        List<Variable> res = new ArrayList<>(); 
+        for (Variable v: this) {
+            if (v instanceof VariableInterval) {
+                VariableInterval vi = (VariableInterval) v;
+                if (vi.gt.isTarget()) res.add(vi.gt);
+                if (vi.lt.isTarget()) res.add(vi.lt);                                
+            } else if (v.isTarget()) {
+                res.add(v);                    
+            }
+        }
+        return res;
+    }
+
+    public List<Variable> getArtifacts() {
+        List<Variable> res = new ArrayList<>(); 
+        for (Variable v: this) {
+            if (v instanceof VariableInterval) {
+                VariableInterval vi = (VariableInterval) v;
+                if (vi.gt.isArtifact()) res.add(vi.gt);
+                if (vi.lt.isArtifact()) res.add(vi.lt);                                
+            } else if (v.isArtifact()) {
+                res.add(v);                    
+            }
+        }
+        return res;
+    }
 
 }

@@ -30,6 +30,7 @@ var
   bound1, bound2, bound3: bool;
   bound123: bool;
   not_bound123: bool;
+  any_bound: bool;
 let
 
   assert((xmin <= x) and (x <= xmax));
@@ -40,8 +41,11 @@ let
   bound3 = (x32 - x31)*(y - y31) > (y32 - y31)*(x - x31);
   bound123 =  (bound1  and      bound2  and      bound3) ;
   not_bound123 = (not bound123);
+  any_bound = (bound1  or       bound2  or       bound3);
 
   --%PROPERTY bound123;
   --%PROPERTY not_bound123;
+  --%PROPERTY any_bound;
+
 tel
 

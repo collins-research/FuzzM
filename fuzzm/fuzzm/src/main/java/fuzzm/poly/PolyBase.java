@@ -398,7 +398,7 @@ public class PolyBase extends AbstractPoly {
 	public String toACL2() {
 		String res = "(+ ";
 		for(VariableID var : this) {
-			res += "(* " + coefficients.get(var) + " (id ," + var + " " + var.cex + "))";
+			res += "(* " + coefficients.get(var) + " " +  var.toACL2() + ")";
 		}
 		res += constant.toString();
 		res += ")";
@@ -489,5 +489,10 @@ public class PolyBase extends AbstractPoly {
 		}
 		return new PolyBase(coefficients,constant);
 	}
+
+    @Override
+    public Set<VariableID> getVariables() {
+        return coefficients.keySet();
+    }
 	
 }

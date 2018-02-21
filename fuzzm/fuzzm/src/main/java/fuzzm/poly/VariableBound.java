@@ -11,8 +11,6 @@ package fuzzm.poly;
 import java.util.ArrayList;
 import java.util.List;
 
-import fuzzm.util.Debug;
-import fuzzm.util.ID;
 import fuzzm.value.poly.GlobalState;
 import jkind.util.BigFraction;
 
@@ -51,6 +49,7 @@ abstract public class VariableBound extends Variable {
 				        	  ((xcmp < 0) || 
 				                ((xcmp == 0) && prefx))));
 		VariableInequality keep;
+		TargetType newTarget = x.target.inherit(y.target);
 		if (choosex) {
 			keep = x;
 			diff = diff.negate();
@@ -58,37 +57,74 @@ abstract public class VariableBound extends Variable {
 			keep = y;
 		}
 		if (diff.isConstant()) {
-			return new RestrictionResult(keep);
+			return new RestrictionResult(keep.setTarget(newTarget));
 		}
 		RelationType relation = RelationType.INCLUSIVE;
 		if ((xcmp != 0) && (keep.relation == RelationType.INCLUSIVE)) {
 			relation = RelationType.EXCLUSIVE;
 		}
-		return new RestrictionResult(keep,solvePolyGreater0(diff,relation,FeatureType.NONFEATURE,true));
+		return new RestrictionResult(keep,solvePolyGreater0(diff,relation,true,FeatureType.NONFEATURE,newTarget));
 	}
 
+    static VariableEquality solvePolyEquality0(AbstractPoly arg, FeatureType feature, TargetType target) {
+        assert(arg.evaluateCEX().signum() == 0);
+        VariableID id = arg.leadingVariable();
+        AbstractPoly poly = arg.solveFor(id);
+        return new VariableEquality(id,true,poly,feature, target);
+    }
+    
+	static PolyBool normalizePolyEquality0(AbstractPoly arg, FeatureType feature, TargetType target) {
+	    VariableID id = arg.leadingVariable();
+	    AbstractPoly  poly = arg.solveFor(id);
+	    // x = -poly
+	    int cmp = id.cex.compareTo(poly.evaluateCEX());
+	    VariableBound res;
+	    if (cmp == 0) {
+	        return new TruePolyBool(new VariableEquality(id,true,poly,feature, target));
+	    } else if (cmp > 0) {
+	        res = new VariableGreater(id,true,RelationType.EXCLUSIVE,poly,feature,target);
+	    } else {
+	        res = new VariableLess(id,true,RelationType.EXCLUSIVE,poly,feature,target);
+	    }
+	    return new TruePolyBool(res).not();
+	}
+	
+    static PolyBool normalizePolyGreater0(AbstractPoly arg, RelationType relation, FeatureType feature, TargetType target) {
+        if (relation.gt(arg.evaluateCEX().signum())) {
+            return new TruePolyBool(solvePolyGreater0(arg, relation, true, feature, target));
+        }
+        return new TruePolyBool(solvePolyLess0(arg, relation.not(), true, feature, target)).not();
+    }
+    
+    static PolyBool normalizePolyLess0(AbstractPoly arg, RelationType relation, FeatureType feature, TargetType target) {
+        if (relation.lt(arg.evaluateCEX().signum())) {
+            return new TruePolyBool(solvePolyLess0(arg, relation, true, feature, target));
+        }
+        return new TruePolyBool(solvePolyGreater0(arg, relation.not(), true, feature, target)).not();
+    }
+    
 	// ACL2 : (def::un solvePolyGreater0 (relation poly)
-	static VariableInequality solvePolyGreater0(AbstractPoly poly, RelationType relation, FeatureType feature, boolean cex) {
+	static VariableInequality solvePolyGreater0(AbstractPoly poly, RelationType relation, boolean cex, FeatureType feature, TargetType target) {
+	    assert(cex && relation.gt(poly.evaluateCEX().signum()));
 		//
 		// Normalizes an expression of the form (<~ 0 poly)
 		//
 		VariableID name = poly.leadingVariable();
 		int sign = poly.getCoefficient(name).signum();
 		AbstractPoly sln = poly.solveFor(name);
-		VariableInequality r = (sign < 0) ? new VariableLess(name,cex,relation,sln,feature) :
-				new VariableGreater(name,cex,relation,sln,feature);
-			                                
-		if (Debug.isEnabled()) System.out.println(ID.location() + "(< 0 " +  poly + ") = " + r);
+		VariableInequality r = (sign < 0) ? new VariableLess(name,cex,relation,sln,feature,target) :
+				                            new VariableGreater(name,cex,relation,sln,feature,target);			                                
+		//if (Debug.isEnabled()) System.out.println(ID.location() + "(< 0 " +  poly + ") = " + r);
 		return r;
 	}
 
 	// ACL2 : (def::un solvePolyLess0 (relation poly)
-	static VariableInequality solvePolyLess0(AbstractPoly poly, RelationType relation, FeatureType feature, boolean cex) {
-		return solvePolyGreater0(poly.negate(),relation,feature,cex);
+	static VariableInequality solvePolyLess0(AbstractPoly poly, RelationType relation, boolean cex, FeatureType feature, TargetType target) {
+		return solvePolyGreater0(poly.negate(),relation,cex,feature,target);
 	}
 
 	// ACL2: (def::un restrictDisequality (xpoly ypoly relation cex)
-	static List<Variable> restrictDisequality(AbstractPoly xpoly, AbstractPoly ypoly, RelationType relation) {
+	static List<Variable> restrictDisequality(AbstractPoly xpoly, AbstractPoly ypoly, RelationType relation, TargetType target) {
 		// If you already know the relation and which variable bound to keep ..
 		List<Variable> res = new ArrayList<>();
 		//if (Debug.isEnabled()) System.out.println(ID.location() + "restrictX: " + x + " & " + y);
@@ -101,7 +137,7 @@ abstract public class VariableBound extends Variable {
 		diff = (0 < cmp) ? diff : diff.negate();
 		if (! (diff.evaluateCEX().signum() >= 0)) 
 			assert(false);
-		res.add(solvePolyGreater0(diff,relation,FeatureType.NONFEATURE,true));
+		res.add(solvePolyGreater0(diff,relation,true,FeatureType.NONFEATURE,target));
 		return res;
 	}
 

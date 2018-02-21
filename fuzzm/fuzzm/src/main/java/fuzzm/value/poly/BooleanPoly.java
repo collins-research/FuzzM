@@ -9,7 +9,6 @@
 package fuzzm.value.poly;
 
 import fuzzm.poly.PolyBool;
-import fuzzm.poly.TruePolyBool;
 import fuzzm.poly.VariableBoolean;
 import fuzzm.poly.VariableID;
 import fuzzm.value.hierarchy.EvaluatableValue;
@@ -30,7 +29,8 @@ public class BooleanPoly extends PolyEvaluatableValue {
 	}
 	
 	public BooleanPoly(VariableID value) {
-		this.value = new TruePolyBool(new VariableBoolean(value));
+	    VariableBoolean var = new VariableBoolean(value);
+	    this.value = PolyBool.boolVar(var);
 	}
 	
 	// not()
@@ -59,12 +59,12 @@ public class BooleanPoly extends PolyEvaluatableValue {
 	}
 
 
-	public boolean isTrue() {
-		return value.isTrue();
+	public boolean isAlwaysTrue() {
+		return value.isAlwaysTrue();
 	}
 
-	public boolean isFalse() {
-		return value.isFalse();
+	public boolean isAlwaysFalse() {
+		return value.isAlwaysFalse();
 	}
 
 	@Override

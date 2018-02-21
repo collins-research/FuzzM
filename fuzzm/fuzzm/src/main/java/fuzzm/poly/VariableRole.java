@@ -8,7 +8,7 @@
  */
 package fuzzm.poly;
 
-public enum VariableType {
+public enum VariableRole {
 	PRINCIPLE,
 	AUXILIARY;
 }

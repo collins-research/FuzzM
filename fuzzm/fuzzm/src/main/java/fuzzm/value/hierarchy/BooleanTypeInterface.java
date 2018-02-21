@@ -10,7 +10,7 @@ package fuzzm.value.hierarchy;
 
 public interface BooleanTypeInterface {
 	
-	public boolean isTrue();
-	public boolean isFalse();
+	public boolean isAlwaysTrue();
+	public boolean isAlwaysFalse();
 
 }

@@ -32,7 +32,10 @@ import fuzzm.value.poly.GlobalState;
 import fuzzm.value.poly.IntegerPoly;
 import fuzzm.value.poly.PolyEvaluatableValue;
 import fuzzm.value.poly.RationalPoly;
+import jkind.lustre.BinaryExpr;
+import jkind.lustre.BinaryOp;
 import jkind.lustre.BoolExpr;
+import jkind.lustre.CastExpr;
 import jkind.lustre.Expr;
 import jkind.lustre.FunctionCallExpr;
 import jkind.lustre.IdExpr;
@@ -55,19 +58,6 @@ public class DepthFirstPolyGeneralizer extends DepthFirstSimulator {
 		ftable = new PolyFunctionLookup(fns.fsig);
 		fmap   = new PolyFunctionMap();
 		addGlobalUFInvariants(fns);
-	}
-	
-	static PolyEvaluatableValue toPEV(NamedType type, VariableID varid) {
-		if (type == NamedType.BOOL) {
-			return (varid.cex.compareTo(BigFraction.ZERO) == 0) ? BooleanPoly.FALSE : BooleanPoly.TRUE;
-		}
-		if (type == NamedType.INT) {
-			return new IntegerPoly(varid);
-		}
-		if (type == NamedType.REAL) {
-			return new RationalPoly(varid);
-		}
-		throw new IllegalArgumentException();
 	}
 	
 	static List<PolyEvaluatableValue> nthArgs(int n, Collection<EvaluatableArgList> args) {
@@ -105,19 +95,18 @@ public class DepthFirstPolyGeneralizer extends DepthFirstSimulator {
 			for (EvaluatableArgList args: fns.getInstances(fn)) {
 				BigFraction fnValue = ((InstanceType<?>) fns.get(fn, args)).getValue();
 				String prefix = "UF_" + fn +  args.toString();
-				String fnvarname = prefix + "=" + fnValue;
+				String fnvarname = prefix + ".cex = " + fnValue;
 				VariableID fnvar = VariableID.postAlloc(fnvarname,fns.fsig.getFnType(fn),fnValue);
-				ftable.setFnValue(fn, args, toPEV(fns.fsig.getFnType(fn),fnvar));
-				List<PolyEvaluatableValue> argv = new ArrayList<>();
+				ftable.setFnValue(fn, args, fnvar);
+				List<VariableID> argv = new ArrayList<>();
 				List<TypedName> argvars = new ArrayList<>();
 				int index = 0;
 				for (EvaluatableValue arg: args) {
 					BigFraction argValue = ((InstanceType<?>) arg).getValue();
-					String base = prefix + "_arg" + index;
+					String base = prefix + "_arg" + index + ".cex = " + argValue ;
 					VariableID z = VariableID.postAlloc(base,fns.fsig.getArgTypes(fn).get(index),argValue);
 					argvars.add(z.name.name);
-					PolyEvaluatableValue w = toPEV(fns.fsig.getArgTypes(fn).get(index),z);
-					argv.add(w);
+					argv.add(z);
 					index++;
 				}
 				ftable.setArgValues(fn, args, argv);
@@ -150,9 +139,9 @@ public class DepthFirstPolyGeneralizer extends DepthFirstSimulator {
 		Expr elseExpr = e.elseExpr;
 		Value res;
 		BooleanPoly testValue = (BooleanPoly) testExpr.accept(this);
-		if (testValue.isTrue()) {
+		if (testValue.isAlwaysTrue()) {
 			res = thenExpr.accept(this);
-		} else if (testValue.isFalse()) {
+		} else if (testValue.isAlwaysFalse()) {
 			res = elseExpr.accept(this);
 		} else {
 			Type et = typeOf(thenExpr);
@@ -190,31 +179,66 @@ public class DepthFirstPolyGeneralizer extends DepthFirstSimulator {
 	}
 
 	@Override
+	public EvaluatableValue visit(CastExpr e) {
+	    EvaluatableValue arg = (EvaluatableValue) e.expr.accept(this);
+	    GlobalState.pushExpr(step, e);
+	    EvaluatableValue res = arg.cast(e.type);
+	    Expr r = GlobalState.popExpr();
+        assert(r == e);
+	    return res;
+	}	    
+
+	@Override
+	public Value visit(BinaryExpr e) {
+	    if (e.op == BinaryOp.INT_DIVIDE) {
+	        EvaluatableValue L = (EvaluatableValue) e.left.accept(this);
+	        EvaluatableValue R = (EvaluatableValue) e.right.accept(this);
+	        GlobalState.pushExpr(step, e);
+	        Value res = L.int_divide(R);
+	        Expr r = GlobalState.popExpr();
+	        assert(r == e);
+	        return res;
+	    } else if (e.op == BinaryOp.MODULUS){
+	        EvaluatableValue L = (EvaluatableValue) e.left.accept(this);
+	        EvaluatableValue R = (EvaluatableValue) e.right.accept(this);
+	        GlobalState.pushExpr(step, e);
+	        Value res = L.modulus(R);
+	        Expr r = GlobalState.popExpr();
+	        assert(r == e);
+	        return res;
+	    } else {
+	        return super.visit(e);
+	    }
+	}
+	@Override
 	public EvaluatableValue visit(FunctionCallExpr e) {
+        String fn = e.function;
 		List<EvaluatableValue> args = new ArrayList<>();
 		EvaluatableArgList sig = new EvaluatableArgList();
 		List<NamedType> argtypes = ftable.getArgTypes(e.function);
-		int index = 0;
+		List<VariableID> ufVarArgs = ftable.getArgVarValues(fn,sig);
+        int index = 0;
 		for (Expr v: e.args) {
+		    GlobalState.addReMap(ufVarArgs.get(index), step, v);
 			PolyEvaluatableValue ev = (PolyEvaluatableValue) v.accept(this);
 			args.add(ev);
 			sig.add(Rat.ValueFromTypedFraction(argtypes.get(index), ev.cex()));
 			index++;
 		}
-		String fn = e.function;
 		// From the function name and the arguments we can get
 		// the poly args and the poly return value.
-		List<PolyEvaluatableValue> ufargs = ftable.getArgValues(fn,sig);
-		PolyEvaluatableValue ufvalue = ftable.getFnValue(fn, sig);
+		List<PolyEvaluatableValue> ufPolyArgs = ftable.getArgPolyValues(fn,sig);
+		PolyEvaluatableValue ufPolyValue = ftable.getFnPolyValue(fn, sig);
 		index = 0;
 		for (EvaluatableValue v: args) {
-			BooleanPoly res = (BooleanPoly) v.equalop(ufargs.get(index));
+			BooleanPoly res = (BooleanPoly) v.equalop(ufPolyArgs.get(index));
 			if (Debug.isEnabled()) System.out.println(ID.location() + "Adding " + e.function + " Instance Constraint");
 			GlobalState.addConstraint(res.value);
 			index++;
 		}
-		if (Debug.isEnabled()) System.out.println(ID.location() + e + " evaluated to " + ufvalue + " [" + ufvalue.cex() + "]");
-		return ufvalue;
+		if (Debug.isEnabled()) System.out.println(ID.location() + e + " evaluated to " + ufPolyValue + " [" + ufPolyValue.cex() + "]");
+		GlobalState.addReMap(ftable.getFnVarValue(fn,sig), step, e);
+		return ufPolyValue;
 	}
 
 	@Override

@@ -35,7 +35,7 @@ public class FunctionLookupEV extends FunctionLookup<EvaluatableValue> {
 	public void addEncodedString(String entry) {
 		// String is of the form:
 		// fname ftype tvalue [argtype argvalue]*
-		String[] split = entry.split(" ");
+	    String[] split = entry.split(" ");
 		if (! (split.length >= 3 && (split.length % 2 == 1))) {
 			throw new IllegalArgumentException("Expected string of the form 'fname ftype tvalue [argtype argvalue]*' but got: '" + entry + "'");
 		}

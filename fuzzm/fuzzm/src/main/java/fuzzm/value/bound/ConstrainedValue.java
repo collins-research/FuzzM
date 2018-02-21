@@ -33,7 +33,7 @@ public class ConstrainedValue extends BoundValue {
 	}
 
 	boolean checkValue(EvaluatableValue value) {
-		boolean res = polarity ? ((BooleanTypeInterface) value).isTrue() : ((BooleanTypeInterface) value).isFalse();
+		boolean res = polarity ? ((BooleanTypeInterface) value).isAlwaysTrue() : ((BooleanTypeInterface) value).isAlwaysFalse();
 		//System.out.println(ID.location() + "Asserting (" + value + " == " + polarity + ") = " + (res? "OK" : "Failed"));
 		return res;
 		// return polarity ? value.isTrue() : value.isFalse();

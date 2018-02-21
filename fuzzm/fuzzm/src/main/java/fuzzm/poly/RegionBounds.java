@@ -11,8 +11,8 @@ package fuzzm.poly;
 import java.math.BigInteger;
 
 import fuzzm.util.Debug;
-import fuzzm.util.ID;
 import fuzzm.util.FuzzMInterval;
+import fuzzm.util.ID;
 import fuzzm.util.Rat;
 import fuzzm.value.hierarchy.RationalType;
 import fuzzm.value.instance.BooleanValue;
@@ -31,6 +31,10 @@ public class RegionBounds {
 	public final RationalType upper;
 	public final RelationType upperType;
 
+	public String toString() {
+	    return (rangeType == RelationType.INCLUSIVE ? "" : "!") + left(this.lowerType) + lower + "," + upper + right(this.upperType);
+	}
+	
 	public RegionBounds(RationalType lower, RelationType lowerType, RelationType rangeType, RationalType upper, RelationType upperType) {
 		this.lower = lower;
 		this.lowerType = lowerType;
@@ -39,8 +43,8 @@ public class RegionBounds {
 		this.rangeType = rangeType;
 		if (rangeType == RelationType.INCLUSIVE) {
 			BooleanValue res = (BooleanValue) this.lower.lessequal(this.upper);
-			if (! res.isTrue()) {
-				throw new EmptyIntervalException("Empty Interval [" + lower + "," + upper + "]");
+			if (! res.isAlwaysTrue()) {
+				throw new EmptyIntervalException("Empty Interval " + toString());
 			}
 		}
 	}
@@ -58,8 +62,8 @@ public class RegionBounds {
 		this.rangeType = rangeType;
 		if (inclusive) {
 			BooleanValue res = (BooleanValue) this.lower.lessequal(this.upper);
-			if (! res.isTrue()) {
-				throw new EmptyIntervalException("Empty Interval " + left(this.lowerType) + lower + "," + upper + right(this.upperType));
+			if (! res.isAlwaysTrue()) {
+				throw new EmptyIntervalException("Empty Interval " + toString());
 			}
 		}
 	}
@@ -151,8 +155,8 @@ public class RegionBounds {
 		assert(fixed(type));
 		RationalValue tgt = new RationalValue(target);
 		assert(rangeType == RelationType.INCLUSIVE);
-		if (upper.less(tgt).isTrue()) return upper.getValue();
-		if (lower.greater(tgt).isTrue()) return lower.getValue();
+		if (upper.less(tgt).isAlwaysTrue()) return upper.getValue();
+		if (lower.greater(tgt).isAlwaysTrue()) return lower.getValue();
 		return target;
 	}
 

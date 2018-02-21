@@ -19,6 +19,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 
 import fuzzm.solver.SolverName;
+import fuzzm.util.Debug;
 
 /**
  * The user-provided settings for FuzzM.
@@ -52,6 +53,10 @@ public class FuzzMSettings extends ArgumentParser {
 	public static final boolean noVectors_default = false;
 	boolean noVectors = noVectors_default;
 	
+    private static final String PROOF = "proof";
+    public static final boolean Proof_default = false;
+    boolean Proof = Proof_default;
+    
 	//private static final String PROPERTIES = "properties";
 	//public static final boolean properties_default = true;
 	//boolean properties = properties_default;
@@ -89,7 +94,8 @@ public class FuzzMSettings extends ArgumentParser {
 		options.addOption(TARGET, true, "AMQP Address",target_default);
 		options.addOption(SOLVER, true, "Use Only Specified Solver",solver_default);
 		options.addOption(NOVECTORS, false, "Suppress test vector generation (debug)",noVectors_default);
-		//options.addOption(PROPERTIES, false, "Fuzz only model properties",properties_default);
+		options.addOption(PROOF, false, "Generate a validating proof script",Proof_default);
+        //options.addOption(PROPERTIES, false, "Fuzz only model properties",properties_default);
 		//options.addOption(ASTEROID, false, "Use asteroid space metric",asteroid_default);
 		options.addOption(THROTTLE, false, "Throttle vector generation (debug)",throttle_default);
 		//options.addOption(UNBIASED, false, "Disable bias when choosing values on an interval",unbiased_default);
@@ -121,7 +127,12 @@ public class FuzzMSettings extends ArgumentParser {
 			noVectors = true;
 		}
 		
-		if (line.hasOption(SOLVER)) {
+		if (line.hasOption(PROOF)) {
+            Proof = true;
+            Debug.setProof(true);
+        }
+        
+        if (line.hasOption(SOLVER)) {
 			String solverName[] = line.getOptionValues(SOLVER);
 			try {
 				for (String name: solverName) {

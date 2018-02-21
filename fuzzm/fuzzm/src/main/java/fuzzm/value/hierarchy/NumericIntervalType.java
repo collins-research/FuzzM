@@ -73,16 +73,16 @@ abstract public class NumericIntervalType<T extends NumericType<T>> extends Inte
 	@Override
 	public final EvaluatableType<BooleanType> less2(NumericIntervalType<T> left) {
 		// this assumes that min != max
-		if (getLow().greater(left.getHigh()).isTrue()) return newBooleanType(true);
-		if (left.getLow().less(getHigh()).isFalse()) return newBooleanType(false);
+		if (getLow().greater(left.getHigh()).isAlwaysTrue()) return newBooleanType(true);
+		if (left.getLow().less(getHigh()).isAlwaysFalse()) return newBooleanType(false);
 		return newBooleanInterval();
 	}
 	
 	@Override
 	public final EvaluatableType<BooleanType> less2(NumericType<T> left) {
 		// this assumes that min != max
-		if (getLow().greater(left).isTrue()) return newBooleanType(true);
-		if (left.less(getHigh()).isFalse()) return newBooleanType(false);
+		if (getLow().greater(left).isAlwaysTrue()) return newBooleanType(true);
+		if (left.less(getHigh()).isAlwaysFalse()) return newBooleanType(false);
 		return newBooleanInterval();
 	}
 	
@@ -96,16 +96,16 @@ abstract public class NumericIntervalType<T extends NumericType<T>> extends Inte
 	@Override
 	public final EvaluatableType<BooleanType> greater2(NumericIntervalType<T> left) {
 		// this assumes that min != max
-		if (left.getLow().greater(getHigh()).isTrue()) return newBooleanType(true);
-		if (getLow().less(left.getHigh()).isFalse())   return newBooleanType(false);
+		if (left.getLow().greater(getHigh()).isAlwaysTrue()) return newBooleanType(true);
+		if (getLow().less(left.getHigh()).isAlwaysFalse())   return newBooleanType(false);
 		return newBooleanInterval();
 	}
 	
 	@Override
 	public final EvaluatableType<BooleanType> greater2(NumericType<T> left) {
 		// this assumes that min != max
-		if (left.greater(getHigh()).isTrue()) return newBooleanType(true);
-		if ((getLow().less(left)).isFalse())  return newBooleanType(false);
+		if (left.greater(getHigh()).isAlwaysTrue()) return newBooleanType(true);
+		if ((getLow().less(left)).isAlwaysFalse())  return newBooleanType(false);
 		return newBooleanInterval();
 	}
 	
@@ -120,7 +120,7 @@ abstract public class NumericIntervalType<T extends NumericType<T>> extends Inte
 	public final EvaluatableType<BooleanType> equalop2(NumericIntervalType<T> left) {
 		// TODO: we should probably keep this in the Value domain. (ie: do not use isTrue())
 		EvaluatableType<BooleanType> res;
-		if (left.getHigh().less(getLow()).isTrue() || getHigh().less(left.getLow()).isTrue()) {
+		if (left.getHigh().less(getLow()).isAlwaysTrue() || getHigh().less(left.getLow()).isAlwaysTrue()) {
 			if (Debug.isEnabled()) System.err.println(ID.location() + "(" + left.getHigh() + " < " + getLow() + " || " + getHigh() + " < " + left.getLow() + ")");
 			res = newBooleanType(false);
 		} else {
@@ -134,7 +134,7 @@ abstract public class NumericIntervalType<T extends NumericType<T>> extends Inte
 	public final EvaluatableType<BooleanType> equalop2(NumericType<T> left) {
 		// this assumes that min != max
 		EvaluatableType<BooleanType> res;
-		if (left.less(getLow()).isTrue() || left.greater(getHigh()).isTrue()) {
+		if (left.less(getLow()).isAlwaysTrue() || left.greater(getHigh()).isAlwaysTrue()) {
 			if (Debug.isEnabled()) System.err.println(ID.location() + "(" + left + " < " + getLow() + " || " + getHigh() + " < " + left + ")");
 			res = newBooleanType(false);
 		} else {

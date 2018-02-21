@@ -8,9 +8,12 @@
  */
 package fuzzm.poly;
 
+import java.util.List;
+
 import fuzzm.lustre.evaluation.PolyFunctionMap;
 import fuzzm.solver.SolverResults;
 import fuzzm.util.Debug;
+import fuzzm.util.ID;
 import fuzzm.util.ProofWriter;
 import fuzzm.util.RatSignal;
 
@@ -18,6 +21,7 @@ public class TruePolyBool extends PolyBool {
 
 	protected TruePolyBool(boolean cex, VariableList body) {
 		super(cex, body);
+	    assert(cex);
 	}
 
 	@Override
@@ -45,27 +49,23 @@ public class TruePolyBool extends PolyBool {
 	}
 
 	@Override
-	protected boolean isNegated() {
+	public boolean isNegated() {
 		return false;
 	}
 
 	@Override
-	public boolean isFalse() {
+	public boolean isAlwaysFalse() {
 		return false;
 	}
 
 	@Override
-	public boolean isTrue() {
+	public boolean isAlwaysTrue() {
 		return (body.size() == 0);
 	}
 
 	@Override
 	public PolyBool not() {
-		if (body.size() == 1) {
-			Variable c = body.peek();
-			return new TruePolyBool(! cex, new VariableList(c.not()));
-		}
-		return new NotPolyBool(! cex,body);
+		return new FalsePolyBool(! cex,body);
 	}
 
 	@Override
@@ -76,7 +76,7 @@ public class TruePolyBool extends PolyBool {
 		if (Debug.isEnabled()) {
 		    String s1 = this.toACL2();
 		    String s2 = res.toACL2();
-		    ProofWriter.printThms1("normalize", s1, s2);
+		    ProofWriter.printRefinement(ID.location(),"normalize", s1, s2);
 		}
 		return res;
 	}
@@ -86,5 +86,15 @@ public class TruePolyBool extends PolyBool {
 		//System.out.println(ID.location() + "Optimizing with :\n " + this);
 		return body.optimize(cex,fmap,target);
 	}
+
+    @Override
+    public List<Variable> getArtifacts() {
+        return body.getArtifacts();
+    }
+
+    @Override
+    public List<Variable> getTargets() {
+        return body.getTargets();
+    }
 
 }

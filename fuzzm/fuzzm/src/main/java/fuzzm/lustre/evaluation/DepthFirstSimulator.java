@@ -47,7 +47,7 @@ public abstract class DepthFirstSimulator extends BaseEvaluatableValueEvaluator 
 	private final List<Expr> assertions;
 	private final TypeReconstructor tx;
 	
-	private int step = 0;
+	protected int step = 0;
 	private EvaluatableSignal state;
 	private int thms = 0;
 	
@@ -71,65 +71,59 @@ public abstract class DepthFirstSimulator extends BaseEvaluatableValueEvaluator 
 		int k = state.size();
 		System.out.println(ID.location() + "Counterexample Depth : " + k);
 		this.state = new EvaluatableSignal(state);
-		EvaluatableValue prop = BooleanPoly.TRUE;
-		EvaluatableValue newprop;
+		EvaluatableValue accumulatedAssertions = BooleanPoly.TRUE;
+		EvaluatableValue nextAccumulator;
 		for (int time = 0; time < k; time++) {
 			step = time;
 			for (Expr asrt: assertions) {
 				PolyEvaluatableValue asv = (PolyEvaluatableValue) eval(asrt);
-				newprop = prop.and(asv);	
-				if (Debug.logic()) {
-					System.out.println(ID.location() + "Assertion " + asrt + " evaluated to " + asv + " [" + asv.cex() + "]");	
-					System.out.println(ID.location() + "Accumulated Assertions [" + thms + "] " + newprop);
-				}
+				assert(asv.cex().signum() != 0);
+				nextAccumulator = accumulatedAssertions.and(asv);
+				assert(((PolyEvaluatableValue) accumulatedAssertions).cex().signum() != 0);
 				if (Debug.isEnabled()) { 
 					System.out.println(ID.location() + "Assertion " + asrt + " evaluated to " + asv + " [" + asv.cex() + "]");
+					System.out.println(ID.location() + "Accumulated Assertions [" + thms + "] " + nextAccumulator);
 					String asvString = asv.toACL2();
-					String preString = ((PolyEvaluatableValue) prop).toACL2();
-					String postString = ((PolyEvaluatableValue) newprop).toACL2();
-					ProofWriter.printThms(String.valueOf(thms),asvString,preString,postString);
-					System.out.println(ID.location() + "Accumulated Assertions [" + thms + "] " + newprop);
+					String preString = ((PolyEvaluatableValue) accumulatedAssertions).toACL2();
+					String postString = ((PolyEvaluatableValue) nextAccumulator).toACL2();
+					ProofWriter.printAndTT(ID.location(),String.valueOf(thms),asvString,preString,postString);
+					System.out.println(ID.location() + "Accumulated Assertions [" + thms + "] " + nextAccumulator);
 					thms++;
 				}
-				prop = newprop;
+				accumulatedAssertions = nextAccumulator;
 				assert(step == time);
 			}
 		}
 		step = k-1;
 		Expr propExpr = equations.get(property);
 		PolyEvaluatableValue propVal = (PolyEvaluatableValue) eval(propExpr);
-		propVal = (PolyEvaluatableValue) propVal.not();
-		newprop = prop.and(propVal);
-		if (Debug.logic()) {
-			System.out.println(ID.location() + "Property not(" + propExpr + ") evaluated to " + propVal + " [" + propVal.cex() + "]");
-			System.out.println(ID.location() + "Final property [" + thms + "] " + newprop);
-		}
+		if (Debug.isEnabled()) 
+		    System.out.println(ID.location() + property + " = " + propExpr + " evaluated to " + propVal + " [" + propVal.cex() + "]");
+		PolyEvaluatableValue constraintVal = (PolyEvaluatableValue) propVal.not();
+		assert(constraintVal.cex().signum() != 0);
+		EvaluatableValue accumulatedConstraints = accumulatedAssertions.and(constraintVal);
 		if (Debug.isEnabled()) {
-			System.out.println(ID.location() + "Property not(" + propExpr + ") evaluated to " + propVal + " [" + propVal.cex() + "]");
-			String propString = propVal.toACL2();
-			String preString = ((PolyEvaluatableValue) prop).toACL2();
-			String postString = ((PolyEvaluatableValue) newprop).toACL2();
-			ProofWriter.printThms(String.valueOf(thms),propString,preString,postString);
-			System.out.println(ID.location() + "Final property [" + thms + "] " + newprop);
+			System.out.println(ID.location() + "Constraint not(" + propExpr + ") evaluated to " + constraintVal + " [" + constraintVal.cex() + "]");
+			System.out.println(ID.location() + "Final Constraint [" + thms + "] " + accumulatedConstraints);
+			String propString = constraintVal.toACL2();
+			String preString = ((PolyEvaluatableValue) accumulatedAssertions).toACL2();
+			String postString = ((PolyEvaluatableValue) accumulatedConstraints).toACL2();
+			ProofWriter.printAndTT(ID.location(),String.valueOf(thms),propString,preString,postString);
+			System.out.println(ID.location() + "Accumulated Constriant [" + thms + "] " + accumulatedConstraints);
 			thms++;
-		}
-		prop = newprop;		
-		PolyBool polyProp = ((BooleanPoly) prop).value;
-		PolyBool invariants = GlobalState.getInvariants();
-		PolyBool res = polyProp.and(invariants);
-		if (Debug.logic()) {
-			System.out.println(ID.location() + "Invariants : " + invariants);		
-			System.out.println(ID.location() + "Final result [" + thms + "] " + res);
-		}
+		}	
+		PolyBool polyConstraint = ((BooleanPoly) accumulatedConstraints).value;
+		PolyBool globalInvariants = GlobalState.getInvariants();
+		PolyBool finalConstraint = polyConstraint.and(globalInvariants);
 		if (Debug.isEnabled()) {
-			System.out.println(ID.location() + "Property   : " + polyProp);
-			System.out.println(ID.location() + "Invariants : " + invariants);
-			ProofWriter.printThms(String.valueOf(thms),polyProp.toACL2(),invariants.toACL2(),res.toACL2());
-			System.out.println(ID.location() + "Final result [" + thms + "] " + res);
+		    System.err.println(ID.location() + "Accumulated Constraints : " + polyConstraint);
+			System.err.println(ID.location() + "Global Invariants       : " + globalInvariants);
+			ProofWriter.printAndTT(ID.location(),String.valueOf(thms),polyConstraint.toACL2(),globalInvariants.toACL2(),finalConstraint.toACL2());
+			System.out.println(ID.location() + "Final Constraint [" + thms + "] " + finalConstraint);
 			thms++;
 		}
 
-		return res;
+		return finalConstraint;
 	}
 	
 	@Override

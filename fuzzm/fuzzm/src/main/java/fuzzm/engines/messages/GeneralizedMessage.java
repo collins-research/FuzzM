@@ -16,11 +16,10 @@ import fuzzm.engines.EngineName;
 import fuzzm.lustre.BooleanCtx;
 import fuzzm.lustre.ExprCtx;
 import fuzzm.lustre.ExprSignal;
-import fuzzm.poly.PolyBool;
+import fuzzm.lustre.generalize.PolyGeneralizationResult;
 import fuzzm.poly.VariableID;
-import fuzzm.util.IntervalSignal;
+import fuzzm.util.FuzzmName;
 import fuzzm.util.IntervalVector;
-import fuzzm.util.FuzzMName;
 import fuzzm.util.RatSignal;
 import jkind.lustre.BinaryOp;
 import jkind.lustre.RealExpr;
@@ -35,8 +34,11 @@ class GeneralizedMessageIterator implements Iterator<Long> {
 
 	long count;
 	
+	public static final long MAX_MODEL_SIZE = 1000L;
+    
+    
 	public GeneralizedMessageIterator() {
-		count = IntervalSignal.MAX_MODEL_SIZE;
+		count = MAX_MODEL_SIZE;
 	}
 	
 	@Override
@@ -60,15 +62,17 @@ class GeneralizedMessageIterator implements Iterator<Long> {
  */
 public class GeneralizedMessage extends FeatureMessage implements Iterable<Long> {
 
-	public final RatSignal     counterExample;
+	public final double        time;
+    public final RatSignal     counterExample;
 	//public FuzzMModel    cex;
 	//public List<VarDecl> inputNames;
 	public final RatSignal     generalizationTarget;
 	//public final IntervalSignal generalizedCEX;
-	public final PolyBool polyCEX;
+	public final PolyGeneralizationResult polyCEX;
 	
-	private GeneralizedMessage(EngineName source, FeatureID id, RatSignal generalizationTarget, RatSignal counterExample, PolyBool polyCEX, long sequence) {
-		super(source,QueueName.GeneralizedMessage,id,sequence);
+	private GeneralizedMessage(EngineName source, FeatureID id, String name, double time, RatSignal generalizationTarget, RatSignal counterExample, PolyGeneralizationResult polyCEX, long sequence) {
+		super(source,QueueName.GeneralizedMessage,id,name,sequence);
+		assert(polyCEX.result.cex && !polyCEX.result.isNegated());
 		this.counterExample = counterExample;
 		//this.generalizedCEX    = generalizedCEX;
 		//this.inputNames = inputNames;
@@ -76,14 +80,15 @@ public class GeneralizedMessage extends FeatureMessage implements Iterable<Long>
 		//assert(target.size() > 0);
 		this.generalizationTarget = generalizationTarget;
 		this.polyCEX = polyCEX;
+		this.time = time;
 	}
 	
-	public GeneralizedMessage(EngineName source, CounterExampleMessage m, PolyBool polyCEX) {
-		this(source,m.id,m.generalizationTarget,m.counterExample,polyCEX,m.sequence);
+	public GeneralizedMessage(EngineName source, CounterExampleMessage m, PolyGeneralizationResult polyCEX) {
+		this(source,m.id,m.name,m.time,m.generalizationTarget,m.counterExample,polyCEX,m.sequence);
 	}
 	
 	public RatSignal nextBiasedVector(boolean biased, BigFraction min, BigFraction max, IntervalVector span, Map<VariableID,BigFraction> ctx) {
-		return polyCEX.randomVector(biased,min,max,span,ctx);
+		return polyCEX.result.randomVector(biased,min,max,span,ctx);
 	}
 	
 	@Override
@@ -175,15 +180,15 @@ public class GeneralizedMessage extends FeatureMessage implements Iterable<Long>
 		ExprSignal inputs = span.getExprSignal(k);
 		inputs = inputs.sub(counterExample);
 		RatSignal vector = generalizationTarget.sub(counterExample);
-		ExprCtx dot = inputs.dot(vector, FuzzMName.pivotDot + "__");
+		ExprCtx dot = inputs.dot(vector, FuzzmName.pivotDot + "__");
 		dot.op(BinaryOp.GREATEREQUAL,new RealExpr(BigDecimal.ZERO));
-		dot.bind(FuzzMName.pivotDot);
+		dot.bind(FuzzmName.pivotDot);
 		return new BooleanCtx(dot);
 	}
 	
 	@Override
 	public int bytes() {
-		return 1 + counterExample.bytes() + polyCEX.bytes();
+		return 1 + counterExample.bytes() + polyCEX.result.bytes();
 	}
 	
 }

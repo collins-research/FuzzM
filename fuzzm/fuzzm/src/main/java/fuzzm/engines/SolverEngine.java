@@ -25,9 +25,9 @@ import fuzzm.solver.Solver;
 import fuzzm.solver.SolverResults;
 import fuzzm.util.Debug;
 import fuzzm.util.EvaluatableSignal;
+import fuzzm.util.FuzzmName;
 import fuzzm.util.ID;
 import fuzzm.util.IntervalVector;
-import fuzzm.util.FuzzMName;
 import fuzzm.util.RatSignal;
 import fuzzm.util.RatVect;
 import fuzzm.util.TypedName;
@@ -100,6 +100,7 @@ public class SolverEngine extends Engine {
 				    RatSignal counterExample = sr.cex;
 				    int k = counterExample.size();
 				    if (k > 0) {
+				        // System.err.println(ID.location() + "Solver Solution : " + sr);
 				        //Map<String,EvaluatableValue> intervalValues[] = counterExample.intervalValues();
 				        //EventBasedSimulator ratSim = new EventBasedIntervalSimulator(intervalValues, FuzzMName.fuzzProperty, newMain);
 				        //IntervalOptimizer optimizer = new IntervalOptimizer(ratSim);
@@ -117,15 +118,18 @@ public class SolverEngine extends Engine {
 				        //evaluatableCEX = evOpt.optimizeInterface(cfg.getSpan(), evaluatableCEX, evaluatableTarget);					
 
 				        //System.out.println(ID.location() + "Starting Optimization ..");
-				        sr = PolygonalOptimizer.optimize(sr, targetSignal, FuzzMName.fuzzProperty, generalizeMain);
-				        //System.out.println(ID.location() + "Optimized Solution  : " + sr.cex);
+
+				        sr = PolygonalOptimizer.optimize(sr, targetSignal, m.name, FuzzmName.fuzzProperty, generalizeMain);
+
+				        if (Debug.isEnabled()) System.out.println(ID.location() + "Optimized Solution  : " + sr.cex);
 				        // counterExample = evaluatableCEX.ratSignal();
 				        //System.out.println(ID.location() + "Optimized Solution : " + sr.cex.size() + "*" + sr.cex.get(0).size());
 				        cexserver.push(new CounterExampleMessage(name,m,sr));
 				    } else {
-				        satserver.push(new UnsatMessage(name,m));
+				        satserver.push(new UnsatMessage(name,m,sr.time));
 				    }
 				} catch (Throwable e) {
+				    e.printStackTrace(System.err);
                     Throwable cause = e;
                     while (cause.getCause() != null) {
                         cause = cause.getCause();

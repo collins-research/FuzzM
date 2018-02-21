@@ -3,20 +3,19 @@ services:
   fuzzm:
     image: fuzzm:latest
     build:
-      context: ../fuzzm
-#     args:
-#     - proxy_host=<proxy_host>
-#     - proxy_port=<proxy_port>
+      context: ../../fuzzm
+      args:
+      - proxy_host=${PROXY_HOST}
+      - proxy_port=${PROXY_PORT}
     links:
     - rabbit
     volumes:
     - ".:/root/tftp"
     working_dir: "/root/tftp"
     entrypoint:
-    - wait-for-it.sh
-    - rabbit:5672
-    - --
-    - ./fuzz-tftp.sh
+    - /bin/sh
+    - -c
+    - "umask 000 && wait-for-it.sh rabbit:5672 -- ./fuzz-tftp.sh"
   rabbit:
     image: "rabbitmq:3-management"
     hostname: "rabbit"
@@ -28,25 +27,19 @@ services:
     image: tftprelay:latest
     build: 
       context: .
-#     args:
-#     - proxy=<proxy_host>:<proxy_port>
+      args:
+      - proxy=${HTTP_PROXY}
     privileged: true
     links:
     - rabbit
     - tftp
     volumes:
     - ".:/root/tftp"
-    - "../base-receiver:/root/base-receiver"
+    - "../../base-receiver:/root/base-receiver"
     entrypoint:
-    - wait-for-it.sh
-    - rabbit:5672
-    - --
-    - python3
-    - relay.py
-    - -t
-    - tftp
-    - -f
-    - rabbit
+    - /bin/sh
+    - -c
+    - "umask 000 && chmod a+rw *.py && chmod a+rw /root/base-receiver/*.py && wait-for-it.sh rabbit:5672 -- python3 relay.py -t tftp -f rabbit"
   tftp:
     image: pghalliday/tftp
     expose:

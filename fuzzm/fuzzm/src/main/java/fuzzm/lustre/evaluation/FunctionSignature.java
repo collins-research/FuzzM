@@ -39,6 +39,7 @@ public class FunctionSignature {
 		signatures = new HashMap<>();
 		fout = new HashMap<>();
 		for (Function f: flist) {
+		    assert(f.outputs.size() <= 1);
 			signatures.put(f.id, typeListFromVarDecl(f.inputs));
 			if (f.outputs.size() > 1) throw new IllegalArgumentException();
 			fout.put(f.id,(NamedType) f.outputs.get(0).type);

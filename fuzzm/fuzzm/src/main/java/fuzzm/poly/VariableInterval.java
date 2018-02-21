@@ -24,14 +24,12 @@ public class VariableInterval extends VariableBound {
 
 	VariableGreater gt;
 	VariableLess    lt;
-	OpType op;
 	
-	protected VariableInterval(VariableGreater gt, VariableLess lt, OpType op) {
-		super(gt.vid,op.op(gt.cex,lt.cex));
+	protected VariableInterval(VariableGreater gt, VariableLess lt) {
+		super(gt.vid,gt.cex && lt.cex);
 		assert(gt.vid.compareTo(lt.vid) == 0);
 		this.gt = gt;
 		this.lt = lt;
-		this.op = op;
 	}
 
 	
@@ -42,32 +40,23 @@ public class VariableInterval extends VariableBound {
 
 	@Override
 	public String toACL2() {
-		if (op == OpType.AND) {
-			return "(and " + gt.toACL2() + " " + lt.toACL2() + ")";
-		} else {
-			return "(or " + gt.toACL2() + " " + lt.toACL2() + ")";
-		}
+		return "(and " + gt.toACL2() + " " + lt.toACL2() + ")";
 	}
+
+    @Override
+    public String toACL2(String cex) {
+        return "(and " + gt.toACL2(cex) + " " + lt.toACL2(cex) + ")";
+    }
 
 	@Override
 	public String toString() {
-		if (op == OpType.AND) {
-			return gt.statusString() + gt.polyString() + gt.opString(VariableLocation.RIGHT) + vid + lt.opString(VariableLocation.LEFT) + lt.polyString() + lt.statusString();
-		}
-		return "(" + gt.statusString() + vid + gt.opString(VariableLocation.LEFT) + gt.polyString() + " || " + lt.polyString() + lt.opString(VariableLocation.RIGHT) + vid + lt.statusString() + ")";
+		return gt.statusString() + gt.polyString() + gt.opString(VariableLocation.RIGHT,gt.target.toString()) + vid + lt.opString(VariableLocation.LEFT,lt.target.toString()) + lt.polyString() + lt.statusString();
 	}
 
 	@Override
 	public String cexString() {
-		String op = (this.op == OpType.AND) ? "&&" : "||";
-		return "(" + gt.cexString() + op + lt.cexString() + ")";
+		return "(" + gt.cexString() + "&&" + lt.cexString() + ")";
 	}
-
-	@Override
-	public VariableInterval not() {
-		return new VariableInterval(lt.not(),gt.not(),op.not());
-	}
-
 
 //	@Override
 //	protected VariableConstraint newConstraint() {
@@ -89,20 +78,6 @@ public class VariableInterval extends VariableBound {
 	@Override
 	public RestrictionResult andTrue2(VariableInterval left) {
 		VariableInterval right = this;
-		if (left.op == OpType.OR) {
-			if (right.op == OpType.OR) {
-				VariableInequality lh = (VariableInequality) better(left.gt,left.lt);
-				VariableInequality rh = (VariableInequality) better(right.gt,right.lt);
-				return lh.andTrue(rh);
-			} else {
-				VariableInequality lh = (VariableInequality) better(left.gt,left.lt);
-				return right.andTrue(lh);
-			}
-		}
-		if (right.op == OpType.OR) {
-			VariableInequality rh = (VariableInequality) better(right.gt,right.lt);
-			return left.andTrue(rh);
-		}
 		RestrictionResult gt = restrictInequality(left.gt,right.gt);
 		RestrictionResult lt = restrictInequality(left.lt,right.lt);
 		return RestrictionResult.restrictionInterval(gt,lt);
@@ -111,71 +86,17 @@ public class VariableInterval extends VariableBound {
 	// ACL2: (def::trueAnd andTrue-variableInterval-variableLess (x y cex)
 	@Override
 	public RestrictionResult andTrue2(VariableLess left) {
-		if (op == OpType.OR) {
-			VariableInequality x = left.chooseBestCompliment(this);
-			return x.andTrue2(left);
-		}
 		RestrictionResult res = restrictInequality(left,lt);
 		VariableLess less = (VariableLess) res.newConstraint;		
-		return new RestrictionResult(new VariableInterval(gt,less,OpType.AND),res.restrictionList);
+		return new RestrictionResult(new VariableInterval(gt,less),res.restrictionList);
 	}
 
 	@Override
 	// ACL2: (def::trueAnd andTrue-variableInterval-variableGreater (x y cex)
 	public RestrictionResult andTrue2(VariableGreater left) {
-		if (op == OpType.OR) {
-			VariableInequality x = left.chooseBestCompliment(this);
-			return x.andTrue2(left);
-		}
 		RestrictionResult res = restrictInequality(left,gt);
 		VariableGreater greater = (VariableGreater) res.newConstraint;	
-		return new RestrictionResult(new VariableInterval(greater,lt,OpType.AND),res.restrictionList);
-	}
-
-	@Override
-	public Variable andFalse(Variable x) {
-		assert(!x.cex && this.cex);
-		return ((VariableInterface) x).andFalse2(this);		
-	}
-
-
-	@Override
-	public Variable andFalse2(VariableEquality left) {
-		return left.andFalse2(this);
-	}
-
-	@Override
-	public Variable andFalse2(VariableInterval left) {
-		if (op == OpType.OR) {
-			return better(this,left);
-		}
-		if (left.op == OpType.OR) {
-			return better(this,left);
-		}
-		VariableLess    lt = (VariableLess) better(this.lt,left.lt);
-		VariableGreater gt = (VariableGreater) better(this.gt,left.gt);
-		return new VariableInterval(gt,lt,OpType.AND);
-	}
-
-
-	@Override
-	public Variable andFalse2(VariableLess left) {
-		if (op == OpType.OR) {
-			return better(this,left);
-		}
-		VariableLess lt = (VariableLess) better(this.lt,left);
-		return new VariableInterval(this.gt,lt,OpType.AND);
-	}
-
-
-	@Override
-	public Variable andFalse2(VariableGreater left) {
-		if (op == OpType.OR) {
-			return better(this,left);
-		}
-		VariableGreater gt = (VariableGreater) better(this.gt,left);
-		return new VariableInterval(gt,this.lt,OpType.AND);
-		
+		return new RestrictionResult(new VariableInterval(greater,lt),res.restrictionList);
 	}
 
 	@Override
@@ -187,7 +108,7 @@ public class VariableInterval extends VariableBound {
 	@Override
 	public RestrictionResult restriction() {
 		AbstractPoly diff = lt.poly.subtract(gt.poly);
-		return new RestrictionResult(this,VariableBound.solvePolyGreater0(diff, RelationType.INCLUSIVE,FeatureType.NONFEATURE,true));
+		return new RestrictionResult(this,VariableBound.solvePolyGreater0(diff, RelationType.INCLUSIVE,true,FeatureType.NONFEATURE,lt.target.inherit(gt.target)));
 	}
 	
 	@Override
@@ -216,30 +137,19 @@ public class VariableInterval extends VariableBound {
 		throw new IllegalArgumentException();
 	}
 
-
-	@Override
-	public Variable andFalse2(VariableBoolean left) {
-		throw new IllegalArgumentException();
-	}
-
-
 	@Override
 	public boolean implicitEquality() {
 		AbstractPoly diff = lt.poly.subtract(gt.poly);
 		if (diff.isConstant()) {
 			BigFraction delta = diff.getConstant();
 			if (delta.signum() == 0) {
-				if (op == OpType.AND) {
-					return (gt.relation == RelationType.INCLUSIVE) && (lt.relation == RelationType.INCLUSIVE);
-				} else {
-					return (gt.relation == RelationType.EXCLUSIVE) && (lt.relation == RelationType.EXCLUSIVE);
-				}
+				return (gt.relation == RelationType.INCLUSIVE) && (lt.relation == RelationType.INCLUSIVE);
 			} else if (vid.name.name.type == NamedType.INT) {
 				if (delta.compareTo(BigFraction.ONE) < 0) {
 					AbstractPoly base = gt.poly.subtract(gt.poly.getConstant());
 					BigInteger z = base.leastCommonDenominator();
 					if (z.compareTo(BigInteger.ONE) == 0) {
-						return (op == OpType.AND) && (delta.compareTo(BigFraction.ONE) < 0);
+						return (delta.compareTo(BigFraction.ONE) < 0);
 					}
 				}
 			}
@@ -252,12 +162,10 @@ public class VariableInterval extends VariableBound {
 		assert(implicitEquality());
 		AbstractPoly diff = lt.poly.subtract(gt.poly);		
 		BigFraction delta = diff.getConstant();
+		FeatureType newFeature = gt.feature == lt.feature ? gt.feature : FeatureType.NONFEATURE;
+		TargetType newTarget = gt.target == lt.target ? gt.target : TargetType.TARGET;
 		if (delta.signum() == 0) {
-			if (op == OpType.AND) {
-				return new VariableEquality(vid,cex,RelationType.INCLUSIVE,gt.poly,gt.feature == lt.feature ? gt.feature : FeatureType.NONFEATURE);
-			} else {
-				return new VariableEquality(vid,cex,RelationType.EXCLUSIVE,gt.poly,gt.feature == lt.feature ? gt.feature : FeatureType.NONFEATURE);
-			}
+			return new VariableEquality(vid,cex,gt.poly,newFeature, newTarget);
 		} else {
 			BigFraction min = Rat.roundUp(gt.poly.getConstant());
 			BigFraction max = Rat.roundDown(lt.poly.getConstant());
@@ -268,7 +176,7 @@ public class VariableInterval extends VariableBound {
 				System.exit(1);
 			}
 			AbstractPoly base = gt.poly.subtract(gt.poly.getConstant()).add(min);
-			return new VariableEquality(vid,cex,RelationType.INCLUSIVE,base,gt.feature == lt.feature ? gt.feature : FeatureType.NONFEATURE);
+			return new VariableEquality(vid,cex,base,newFeature,newTarget);
 		}
 	}
 
@@ -291,19 +199,19 @@ public class VariableInterval extends VariableBound {
 	public Variable tightenIntegerBounds() {
 		VariableGreater gt = (VariableGreater) (this.gt.slackIntegerBounds() ? this.gt.tightenIntegerBounds() : this.gt);
 		VariableLess    lt = (VariableLess)    (this.lt.slackIntegerBounds() ? this.lt.tightenIntegerBounds() : this.lt);
-		return new VariableInterval(gt,lt,this.op);
+		return new VariableInterval(gt,lt);
 	}
 
 	@Override
 	public boolean evalCEX(Map<VariableID, BigFraction> ctx) {
-		return (this.op == OpType.AND) ? gt.evalCEX(ctx) & lt.evalCEX(ctx) : gt.evalCEX(ctx) & lt.evalCEX(ctx);
+		return gt.evalCEX(ctx) && lt.evalCEX(ctx);
 	}
 
 
 	@Override
 	public boolean reducableIntegerInterval() {
 		if (lt.relation == RelationType.EXCLUSIVE || gt.relation == RelationType.EXCLUSIVE) return false;
-		boolean integerInterval = (this.op == OpType.AND) && (vid.name.name.type == NamedType.INT) && !lt.poly.isConstant() && !gt.poly.isConstant();
+		boolean integerInterval = (vid.name.name.type == NamedType.INT) && !lt.poly.isConstant() && !gt.poly.isConstant();
 		if (! integerInterval) return false;
 		VariableID LTvid = lt.poly.leadingVariable();
         VariableID GTvid = gt.poly.leadingVariable();
@@ -342,14 +250,14 @@ public class VariableInterval extends VariableBound {
 			//System.out.println(ID.location() + delta + " allocated after " + lt.poly.leadingVariable());
 			//VariableID delta = VariableID.postAlloc("in", NamedType.INT, delta0);
 			AbstractPoly eqpoly = lt.poly.subtract(new PolyBase(delta).divide(new BigFraction(N)));
-			VariableGreater deltaBound = new VariableGreater(delta, true, RelationType.INCLUSIVE, new PolyBase(BigFraction.ZERO), lt.feature);
+			VariableGreater deltaBound = new VariableGreater(delta, true, RelationType.INCLUSIVE, new PolyBase(BigFraction.ZERO), lt.feature, lt.target);
 			List<Variable> restrictions = new ArrayList<>();
-			eqpoly = VariableEquality.integerEqualityConstraint(eqpoly,restrictions);
+			eqpoly = VariableEquality.integerEqualityConstraint(eqpoly,TargetType.CHAFF,restrictions);
 			assert(eqpoly.evaluateCEX().compareTo(vid.cex) == 0);
-			VariableEquality newBound = new VariableEquality(vid,true,RelationType.INCLUSIVE,eqpoly,lt.feature);
+			VariableEquality newBound = new VariableEquality(vid,true,eqpoly,lt.feature,lt.target);
 			// gt.poly <= xeq
 			AbstractPoly gtpoly = gt.poly.subtract(eqpoly);
-			VariableBound newGT = VariableBound.solvePolyLess0(gtpoly, RelationType.INCLUSIVE, gt.feature, true);
+			VariableBound newGT = VariableBound.solvePolyLess0(gtpoly, RelationType.INCLUSIVE, true, gt.feature, gt.target);
 			restrictions.add(newGT);
 			restrictions.add(deltaBound);
 			return new RestrictionResult(newBound,restrictions);
@@ -362,14 +270,14 @@ public class VariableInterval extends VariableBound {
 			//System.out.println(ID.location() + delta + " allocated after " + gt.poly.leadingVariable());
 			//VariableID delta = VariableID.postAlloc("delta", NamedType.INT, delta0);
 			AbstractPoly eqpoly = gt.poly.add(new PolyBase(delta).divide(new BigFraction(N)));
-			VariableGreater deltaBound = new VariableGreater(delta, true, RelationType.INCLUSIVE, new PolyBase(BigFraction.ZERO), gt.feature);
+			VariableGreater deltaBound = new VariableGreater(delta, true, RelationType.INCLUSIVE, new PolyBase(BigFraction.ZERO), gt.feature, gt.target);
 			List<Variable> restrictions = new ArrayList<>();
-			eqpoly = VariableEquality.integerEqualityConstraint(eqpoly,restrictions);
+			eqpoly = VariableEquality.integerEqualityConstraint(eqpoly,TargetType.CHAFF,restrictions);
 			assert(eqpoly.evaluateCEX().compareTo(vid.cex) == 0);
-			VariableEquality newBound = new VariableEquality(vid,true,RelationType.INCLUSIVE,eqpoly,gt.feature);
+			VariableEquality newBound = new VariableEquality(vid,true,eqpoly,gt.feature,gt.target);
 			// xeq <= lt.poly
 			AbstractPoly ltpoly = eqpoly.subtract(lt.poly);
-			VariableBound newLT = VariableBound.solvePolyLess0(ltpoly, RelationType.INCLUSIVE, lt.feature, true);
+			VariableBound newLT = VariableBound.solvePolyLess0(ltpoly, RelationType.INCLUSIVE, true, lt.feature, lt.target);
 			restrictions.add(newLT);
 			restrictions.add(deltaBound);
 			return new RestrictionResult(newBound,restrictions);			
@@ -379,7 +287,7 @@ public class VariableInterval extends VariableBound {
 
 	@Override
 	public VariableInterval rewrite(Map<VariableID, AbstractPoly> rewrite) {
-		return new VariableInterval(gt.rewrite(rewrite),lt.rewrite(rewrite),op);
+		return new VariableInterval(gt.rewrite(rewrite),lt.rewrite(rewrite));
 	}
 	@Override
 	public AbstractPoly maxBound(int sign) {
@@ -408,5 +316,157 @@ public class VariableInterval extends VariableBound {
         return new RestrictionResult(this,restrictions);
     }
 
+
+    @Override
+    public Variable target(boolean trueL, Variable right) {
+        return right.target2(!trueL, this);
+    }
+
+    @Override
+    public Variable target2(boolean trueL, VariableEquality left) {
+        return new VariableInterval((VariableGreater) this.gt.target2(trueL,left),(VariableLess) this.lt.target2(trueL,left));
+    }
+
+
+    @Override
+    public Variable target2(boolean trueL, VariableInterval left) {
+        if (trueL) {
+            return new VariableInterval((VariableGreater) this.gt.target2(trueL,left.gt),(VariableLess) this.lt.target2(trueL,left.lt));
+        } else {
+            return new VariableInterval((VariableGreater) this.gt.target2(trueL,left.lt),(VariableLess) this.lt.target2(trueL,left.gt));            
+        }
+    }
+
+
+    @Override
+    public Variable target2(boolean trueL, VariableLess left) {
+        if (trueL) {
+            return new VariableInterval(this.gt,(VariableLess) this.lt.target2(trueL,left));
+        } else {
+            return new VariableInterval((VariableGreater) this.gt.target2(trueL,left),this.lt);            
+        }
+    }
+
+
+    @Override
+    public Variable target2(boolean trueL, VariableGreater left) {
+        if (trueL) {
+            return new VariableInterval((VariableGreater) this.gt.target2(trueL,left),this.lt);            
+        } else {
+            return new VariableInterval(this.gt,(VariableLess) this.lt.target2(trueL,left));
+        }
+    }
+
+
+    @Override
+    public Variable target2(boolean trueL, VariableBoolean left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public Variable minSet(Variable right) {
+        return right.minSet2(this);
+    }
+
+
+    @Override
+    public Variable minSet2(VariableEquality left) {
+        return left;
+    }
+
+
+    @Override
+    public Variable minSet2(VariableInterval left) {
+        return new VariableInterval((VariableGreater) this.gt.minSet2(left.gt),(VariableLess) this.lt.minSet2(left.lt));
+    }
+
+
+    @Override
+    public Variable minSet2(VariableLess left) {
+        return new VariableInterval(this.gt,(VariableLess) this.lt.minSet2(left));
+    }
+
+
+    @Override
+    public Variable minSet2(VariableGreater left) {
+        return new VariableInterval((VariableGreater) this.gt.minSet2(left),this.lt);
+    }
+
+
+    @Override
+    public Variable minSet2(VariableBoolean left) {
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public boolean isTarget() {
+        return lt.isTarget() || gt.isTarget();
+    }
+
+
+    @Override
+    public boolean isArtifact() {
+        return lt.isArtifact() || gt.isArtifact();
+    }
+
+
+    @Override
+    public Variable maxSet(Variable right) {
+        return right.maxSet2(this);
+    }
+
+
+    @Override
+    public Variable maxSet2(VariableEquality left) {
+        return this;
+    }
+
+
+    @Override
+    public Variable maxSet2(VariableInterval left) {
+        return new VariableInterval((VariableGreater) this.gt.maxSet2(left.gt),(VariableLess) this.lt.maxSet2(left.lt));
+    }
+
+
+    @Override
+    public Variable maxSet2(VariableLess left) {
+        return new VariableInterval(this.gt,(VariableLess) this.lt.maxSet2(left));        
+    }
+
+
+    @Override
+    public Variable maxSet2(VariableGreater left) {
+        return new VariableInterval((VariableGreater) this.gt.maxSet2(left),this.lt);
+    }
+
+
+    @Override
+    public Variable maxSet2(VariableBoolean left) {
+        throw new IllegalArgumentException();
+    }
+
+
+    @Override
+    public RestrictionResult andTrue2(VariablePhantom left) {
+        return new RestrictionResult(Variable.target(this, true, left.v, false));
+    }
+
+
+    @Override
+    public Variable minSet2(VariablePhantom left) {
+        return this;
+    }
+
+
+    @Override
+    public Variable maxSet2(VariablePhantom left) {
+        return this;
+    }
+
+
+    @Override
+    public Variable target2(boolean trueL, VariablePhantom left) {
+        return Variable.target(this, true, left.v, trueL);
+    }
 	
 }

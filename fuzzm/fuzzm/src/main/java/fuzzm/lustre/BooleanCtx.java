@@ -56,5 +56,10 @@ public class BooleanCtx extends ACExprCtx {
 	public void and(Expr expr) {
 		add(expr);
 	}
+
+	public BooleanCtx and(BooleanCtx arg) {
+	    this.op(BinaryOp.AND,arg);
+	    return this;
+	}
 	
 }

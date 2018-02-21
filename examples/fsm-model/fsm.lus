@@ -5,8 +5,8 @@
 -- This software may be modified and distributed under the terms
 -- of the 3-clause BSD license.  See the LICENSE file for details.
 -- 
-function st0(x: int) returns (y: int);
-function seq0(x: int) returns (y: int);
+function st0() returns (y: int);
+function seq0() returns (y: int);
 
 type byte   = int;
 
@@ -142,7 +142,7 @@ let
   assert(0 <= msg.magic0 and msg.magic0 < 256);
   assert(0 <= msg.magic1 and msg.magic1 < 256);
   assert(0 <= msg.seq    and msg.seq    < 256);
-  assert(0 <= msg.cmd    and msg.cmd    < 16);
+  assert(0 <= msg.cmd    and msg.cmd    < 256);
   assert(0 <= msg.buff[ 0] and msg.buff[ 0] < 256);
   assert(0 <= msg.buff[ 1] and msg.buff[ 1] < 256);
   assert(0 <= msg.buff[ 2] and msg.buff[ 2] < 256);
@@ -211,7 +211,7 @@ let
              if (st3 and st3_ok) then (if (cmd_disco) then 4 else 3) else
              0);
 
-  st = st0(0) -> (pre next_st);
+  st = st0() -> (pre next_st);
 
   next_seq = (if (cmd_reset) then 0 else
               if (st0 and st0_ok) then (1 + seq) else
@@ -220,7 +220,7 @@ let
               if (st3 and st3_ok) then (1 + seq) else
               0);
 
-  seq = seq0(0) -> (pre next_seq);
+  seq = seq0() -> (pre next_seq);
 
   -----------------------------------------------------------------------------
   --
@@ -338,11 +338,11 @@ let
 
   fuzz_st3_ok   = FUZZ(st3_pre_ok and st3_ok);
   fuzz_st3_off0 = FUZZ(st3_pre_ok                                                                        );
-  fuzz_st3_off1 = FUZZ(st3_pre_ok and               magic1_ok and seq_ok and st3_cmd_ok and st2_length_ok);
-  fuzz_st3_off2 = FUZZ(st3_pre_ok and magic0_ok and               seq_ok and st3_cmd_ok and st2_length_ok);
-  fuzz_st3_off3 = FUZZ(st3_pre_ok and magic0_ok and magic1_ok and            st3_cmd_ok and st2_length_ok);
-  fuzz_st3_off4 = FUZZ(st3_pre_ok and magic0_ok and magic1_ok and seq_ok and st3_cmd_ok and st2_length_ok);
-  fuzz_st3_off5 = FUZZ(st3_pre_ok and magic0_ok and magic1_ok and seq_ok and                st2_length_ok);
+  fuzz_st3_off1 = FUZZ(st3_pre_ok and               magic1_ok and seq_ok and st3_cmd_ok and st3_length_ok);
+  fuzz_st3_off2 = FUZZ(st3_pre_ok and magic0_ok and               seq_ok and st3_cmd_ok and st3_length_ok);
+  fuzz_st3_off3 = FUZZ(st3_pre_ok and magic0_ok and magic1_ok and            st3_cmd_ok and st3_length_ok);
+  fuzz_st3_off4 = FUZZ(st3_pre_ok and magic0_ok and magic1_ok and seq_ok and st3_cmd_ok and st3_length_ok);
+  fuzz_st3_off5 = FUZZ(st3_pre_ok and magic0_ok and magic1_ok and seq_ok and                st3_length_ok);
   fuzz_st3_off6 = FUZZ(st3_pre_ok and magic0_ok and magic1_ok and seq_ok and st3_cmd_ok                  );
 
   --%PROPERTY fuzz_st3_ok   ;

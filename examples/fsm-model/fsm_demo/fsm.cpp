@@ -6,6 +6,7 @@
 // of the 3-clause BSD license.  See the LICENSE file for details.
 // 
 #include "fsm.hpp"
+#include <iomanip>
 
 FSM::FSM() {
 	state = 0;
@@ -23,14 +24,14 @@ bool FSM::validPkt(const unsigned char *pkt, const unsigned int len) {
 		return false; //Missing magic value
 	}
 
-	if ((unsigned int)pkt[2] != seqId) {
-		std::cerr << "Invalid sequence number ";
-		return false; //Invalid sequence number
-	}
-
 	if (pkt[3] == 0x02) {
 		std::cerr << "Received reset request ";
 		return false; //Reset request
+	}
+
+	if ((unsigned int)pkt[2] != seqId) {
+                std::cerr << "Invalid sequence number ";
+		return false; //Invalid sequence number
 	}
 
 	//FSM Request Validation
@@ -70,28 +71,44 @@ bool FSM::validPkt(const unsigned char *pkt, const unsigned int len) {
 	}
 
 	else if (state == 3) {
-		if (pkt[3] != 0x07 || len != 4) { //Disconnect method
+                std::cerr << "   Cmand : " << ((int) pkt[3]) << std::endl;
+                if (pkt[3] != 0x07 || len != 4) { //Disconnect method
 			std::cerr << "Received a disconnect request ";
 			return false;
 		}
 		std::cerr << "Bug hit! Aaarg!" << std::endl;
+		FSM::segfault(); //Here is our fake vulnerability
 		return false;
-		//FSM::segfault(); //Here is our fake vulnerability
 	}
 	
 	state++;
+        std::cerr << "   State : " << state << std::endl;
 	return true;
 }
+
+int hist[4] = { 0, 0, 0, 0};
+int pktCount = 0;
 
 void FSM::evalPkt(const unsigned char *pkt, const unsigned int len) {
 	if (!validPkt(pkt, len)) { //Invalid packet -> Reset state & seq ID
 		state = 0;
 		seqId = 0;
 		std::cerr << "resetting state" << std::endl;
+                std::cerr << "   State : " << state << std::endl;
 	}
 	else {
 		seqId++;
 	}
+        hist[state % 4]++;
+        pktCount++;
+        if (pktCount % 1024 == 0) {
+          std::cout << "STATS: ";
+          std::cout        << std::setfill('.') << setw(10) << internal << hist[0];
+          std::cout << ":" << std::setfill('.') << setw(10) << internal << hist[1];
+          std::cout << ":" << std::setfill('.') << setw(10) << internal << hist[2];
+          std::cout << ":" << std::setfill('.') << setw(10) << internal << hist[3];
+          std::cout << std::endl;;
+        }
 }
 
 void FSM::segfault() {
@@ -100,6 +117,6 @@ void FSM::segfault() {
 }
 
 void FSM::printInfo() {
-	cout << "State: " << state << " seqID: " << seqId << endl;
+  cout << "State: " << state << " seqID: " << seqId << std::endl;
 }
 

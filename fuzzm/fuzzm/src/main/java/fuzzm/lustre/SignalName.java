@@ -21,11 +21,15 @@ public class SignalName {
 		this.time = time;
 	}
 	
+	public static String toString(String name, int time) {
+	    String res = ID.decodeString(name);
+	    res = res + ((time >= 0) ? "~" + time : "");
+        return res;
+	}
+	
 	@Override
 	public String toString() {
-		String res = ID.decodeString(name.name);
-		res = (time <= 0) ? res : res + "[" + time + "]";
-		return res;
+		return toString(name.name,time);
 	}
 	
 	@Override

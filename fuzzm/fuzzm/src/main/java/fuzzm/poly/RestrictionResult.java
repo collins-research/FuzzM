@@ -33,7 +33,7 @@ public class RestrictionResult {
 	}
 
 	public static RestrictionResult restrictionInterval(RestrictionResult gt, RestrictionResult lt) {
-		VariableInterval r = new VariableInterval((VariableGreater) gt.newConstraint ,(VariableLess) lt.newConstraint, OpType.AND);
+		VariableInterval r = new VariableInterval((VariableGreater) gt.newConstraint ,(VariableLess) lt.newConstraint);
 		List<Variable> rlst = new ArrayList<>(gt.restrictionList);
 		rlst.addAll(lt.restrictionList);
 		return new RestrictionResult(r,rlst);
@@ -44,10 +44,11 @@ public class RestrictionResult {
 	}
 	
 	public String toACL2() {
-		String res = newConstraint.toACL2();
+		String res = newConstraint.toACL2() + "(and ";
 		for (Variable v: restrictionList) {
-			res = res + " " + v.toACL2();
+			res += " " + v.toACL2();
 		}
+		res += ")";
 		return "(and " + res + ")";
 	}
 	

@@ -106,12 +106,12 @@ public class BooleanValue extends BooleanType implements BooleanValueInterface {
 	// auxiliary
 	
 	@Override
-	public boolean isTrue() {
+	public boolean isAlwaysTrue() {
 		return this == TRUE;
 	}
 
 	@Override
-	public boolean isFalse() {
+	public boolean isAlwaysFalse() {
 		return this == FALSE;
 	}
 

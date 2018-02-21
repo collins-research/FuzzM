@@ -28,4 +28,10 @@ public enum RelationType {
 		if (this == INCLUSIVE) return 1;
 		return -1;
 	}
+	public boolean lt(int cmp) {
+	    return (cmp < 0) || ((this == INCLUSIVE) && (cmp == 0));
+	}
+    public boolean gt(int cmp) {
+        return (cmp > 0) || ((this == INCLUSIVE) && (cmp == 0));
+    }
 }

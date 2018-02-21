@@ -18,12 +18,14 @@ import fuzzm.engines.EngineName;
  */
 public class UnsatMessage extends FeatureMessage {
 
-	public UnsatMessage(EngineName source, FeatureID id, long sequence) {
-		super(source,QueueName.UnsatMessage,id,sequence);
+    final double time;
+	public UnsatMessage(EngineName source, FeatureID id, String name, long sequence, double time) {
+		super(source,QueueName.UnsatMessage,id,name,sequence);
+		this.time = time;
 	}
 
-	public UnsatMessage(EngineName source, ConstraintMessage m) {
-		this(source,m.id,m.sequence);
+	public UnsatMessage(EngineName source, ConstraintMessage m, double time) {
+		this(source,m.id,m.name,m.sequence,time);
 	}
 	
 	@Override
@@ -33,7 +35,7 @@ public class UnsatMessage extends FeatureMessage {
 
 	@Override
 	public String toString() {
-		return "Message: [UNSAT] " + sequence + ":" + id;
+		return "Message: [UNSAT] " + sequence + ":" + id + " Time = " + time/1000.0 + " s"; 
 	}
 
 }

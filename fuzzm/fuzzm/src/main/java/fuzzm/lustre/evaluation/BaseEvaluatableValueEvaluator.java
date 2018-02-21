@@ -14,7 +14,6 @@ import fuzzm.value.hierarchy.InstanceType;
 import fuzzm.value.instance.BooleanInterval;
 import fuzzm.value.instance.IntegerInterval;
 import fuzzm.value.instance.RationalInterval;
-import jkind.analysis.evaluation.Evaluator;
 import jkind.lustre.BinaryExpr;
 import jkind.lustre.BoolExpr;
 import jkind.lustre.CastExpr;
@@ -26,6 +25,7 @@ import jkind.lustre.NamedType;
 import jkind.lustre.RealExpr;
 import jkind.lustre.UnaryExpr;
 import jkind.lustre.values.Value;
+import jkind.lustre.visitors.Evaluator;
 
 public abstract class BaseEvaluatableValueEvaluator extends Evaluator {
 	

@@ -162,5 +162,14 @@ public class RatVect extends Vector<BigFraction> implements Copy<RatVect> {
 		return res;
 	}
 
+    public String toACL2(int time) {
+        String res = "";
+        for (TypedName key: keySet()) {
+            BigFraction value = get(key);
+            res += "  (" + SignalName.toString(key.name, time) + " . " + ((key.type  == NamedType.BOOL) ? (value.signum() == 0 ? "nil" : "t") : value.toString()) + ")\n";
+        }
+        return res;         
+    }
+
 	
 }
