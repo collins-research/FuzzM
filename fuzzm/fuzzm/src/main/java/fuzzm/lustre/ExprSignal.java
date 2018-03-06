@@ -10,6 +10,7 @@ package fuzzm.lustre;
 
 import java.math.BigDecimal;
 
+import fuzzm.util.IDString;
 import fuzzm.util.RatSignal;
 import fuzzm.util.Signal;
 import jkind.lustre.BinaryExpr;
@@ -43,22 +44,22 @@ public class ExprSignal extends Signal<ExprVect> {
 		}
 	}
 	
-	public ExprCtx dot(ExprSignal x, String dotName) {
+	public ExprCtx dot(ExprSignal x, IDString dotName) {
 		// dot = (if (t=0) a*x .. 0) + (0 -> (pre dot))
 		int size = Math.min(x.size(),size());
 		SignalCtx signalCtx = new SignalCtx(NamedType.REAL);
 		for (int time=0; time<size;time++) {
-			signalCtx.add(get(time).dot(x.get(time)).bind(dotName + "_" + time + "_"));
+			signalCtx.add(get(time).dot(x.get(time)).bind(dotName.index(time)));
 		}
 		RealExpr zero = new RealExpr(BigDecimal.ZERO);
 		signalCtx.add(zero);
-		ExprCtx dotExpr = signalCtx.bind(dotName + "_");
-		dotExpr.op(BinaryOp.PLUS,new BinaryExpr(zero,BinaryOp.ARROW,new UnaryExpr(UnaryOp.PRE,new IdExpr(dotName))));
+		ExprCtx dotExpr = signalCtx.bind(dotName);
+		dotExpr.op(BinaryOp.PLUS,new BinaryExpr(zero,BinaryOp.ARROW,new UnaryExpr(UnaryOp.PRE,new IdExpr(dotName.name()))));
 		dotExpr = dotExpr.bind(dotName);
 		return dotExpr;
 	}
 
-	public ExprCtx dot(RatSignal x, String dotName) {
+	public ExprCtx dot(RatSignal x, IDString dotName) {
 		return dot(new ExprSignal(x),dotName);
 	}
 	

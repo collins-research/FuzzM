@@ -9,10 +9,8 @@
 package fuzzm.poly;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 import fuzzm.lustre.SignalName;
-import fuzzm.util.ID;
 import fuzzm.util.OrderedObject;
 import fuzzm.util.TypedName;
 import fuzzm.value.poly.GlobalState;

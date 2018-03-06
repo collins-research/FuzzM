@@ -36,6 +36,6 @@ public interface HeuristicInterface {
 	// Resolve the feature as UNSAT
 	void unsat(boolean objective);
 
-	boolean isUNSAT();
+	boolean done();
 	
 }

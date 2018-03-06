@@ -23,6 +23,7 @@ import fuzzm.lustre.FuzzProgram;
 import fuzzm.lustre.generalize.PolyGeneralizationResult;
 import fuzzm.lustre.generalize.PolygonalGeneralizer;
 import fuzzm.poly.RegionBounds;
+import fuzzm.util.Debug;
 import fuzzm.util.EvaluatableSignal;
 import fuzzm.util.FuzzMInterval;
 import fuzzm.util.FuzzmName;
@@ -101,10 +102,10 @@ public class GeneralizationEngine extends Engine {
 
 		System.out.println(ID.location() + "Starting Generalization ..");
 		PolyGeneralizationResult polyCEX = PolygonalGeneralizer.generalizeInterface(evaluatableCEX,m.name,FuzzmName.fuzzProperty,m.fns,testMain);
-		//if (Debug.isEnabled()) {
+		if (Debug.isEnabled()) {
 			System.out.println(ID.location() + "Generalization : " + polyCEX);
 			//System.out.println(ID.location() + "ACL2 : " + polyCEX.toACL2());
-		//}
+		}
 
 		// Event-based generalization ..
 //		

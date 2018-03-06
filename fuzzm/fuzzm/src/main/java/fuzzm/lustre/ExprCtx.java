@@ -10,6 +10,7 @@ package fuzzm.lustre;
 
 import java.math.BigDecimal;
 
+import fuzzm.util.IDString;
 import jkind.lustre.BinaryExpr;
 import jkind.lustre.BinaryOp;
 import jkind.lustre.BoolExpr;
@@ -68,10 +69,10 @@ public class ExprCtx extends LustreCtx {
 		this.defaultExpr = expr;
 	}
 
-	public ExprCtx bind(String varName) {
-		IdExpr name = new IdExpr(varName);
+	public ExprCtx bind(IDString varName) {
+		IdExpr name = new IdExpr(varName.name());
 		eqs.add(new Equation(name, getExpr()));
-		decls.add(new VarDecl(varName,type));
+		decls.add(new VarDecl(varName.name(),type));
 		setExpr(name);
 		return this;
 	}

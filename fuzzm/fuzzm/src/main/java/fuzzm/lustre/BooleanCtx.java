@@ -57,9 +57,11 @@ public class BooleanCtx extends ACExprCtx {
 		add(expr);
 	}
 
+	// DAG - of course this needs to be functional ..
 	public BooleanCtx and(BooleanCtx arg) {
-	    this.op(BinaryOp.AND,arg);
-	    return this;
+	    BooleanCtx arg0 = new BooleanCtx(this);
+	    arg0.op(BinaryOp.AND,arg);
+	    return arg0;
 	}
 	
 }

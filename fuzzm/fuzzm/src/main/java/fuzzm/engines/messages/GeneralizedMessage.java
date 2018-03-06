@@ -180,7 +180,7 @@ public class GeneralizedMessage extends FeatureMessage implements Iterable<Long>
 		ExprSignal inputs = span.getExprSignal(k);
 		inputs = inputs.sub(counterExample);
 		RatSignal vector = generalizationTarget.sub(counterExample);
-		ExprCtx dot = inputs.dot(vector, FuzzmName.pivotDot + "__");
+		ExprCtx dot = inputs.dot(vector, FuzzmName.pivotDot);
 		dot.op(BinaryOp.GREATEREQUAL,new RealExpr(BigDecimal.ZERO));
 		dot.bind(FuzzmName.pivotDot);
 		return new BooleanCtx(dot);

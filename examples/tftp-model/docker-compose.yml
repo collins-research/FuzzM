@@ -35,11 +35,11 @@ services:
     - tftp
     volumes:
     - ".:/root/tftp"
-    - "../../base-receiver:/root/base-receiver"
+    - "../../relay-base:/root/relay-base"
     entrypoint:
     - /bin/sh
     - -c
-    - "umask 000 && chmod a+rw *.py && chmod a+rw /root/base-receiver/*.py && wait-for-it.sh rabbit:5672 -- python3 relay.py -t tftp -f rabbit"
+    - "umask 000 && chmod a+rw *.py && chmod a+rw /root/relay-base/*.py && wait-for-it.sh rabbit:5672 -- python3 relay.py --target tftp --amqp rabbit"
   tftp:
     image: pghalliday/tftp
     expose:

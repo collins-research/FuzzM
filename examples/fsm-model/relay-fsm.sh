@@ -1,7 +1,7 @@
 #! /bin/bash
 umask 000
 chmod a+rw *.py
-chmod a+rw /root/base-receiver/*.py
+chmod a+rw /root/relay-base/*.py
 rm -rf __pycache__
-rm -rf /root/base-receiver/__pycache__
-python3 relay.py -ti fsm -tp 1515 -f rabbit
+rm -rf /root/relay-base/__pycache__
+python3 relay.py --target fsm --port 1515 --amqp rabbit

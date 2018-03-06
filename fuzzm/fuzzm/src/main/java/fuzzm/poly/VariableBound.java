@@ -77,16 +77,21 @@ abstract public class VariableBound extends Variable {
 	    VariableID id = arg.leadingVariable();
 	    AbstractPoly  poly = arg.solveFor(id);
 	    // x = -poly
-	    int cmp = id.cex.compareTo(poly.evaluateCEX());
+	    BigFraction diff = poly.evaluateCEX().subtract(id.cex);
+	    int cmp = diff.signum();
 	    VariableBound res;
 	    if (cmp == 0) {
 	        return new TruePolyBool(new VariableEquality(id,true,poly,feature, target));
-	    } else if (cmp > 0) {
-	        res = new VariableGreater(id,true,RelationType.EXCLUSIVE,poly,feature,target);
-	    } else {
-	        res = new VariableLess(id,true,RelationType.EXCLUSIVE,poly,feature,target);
-	    }
-	    return new TruePolyBool(res).not();
+	    } else if (cmp < 0) {
+            res = new VariableGreater(id,true,RelationType.EXCLUSIVE,poly,feature,target);
+        } else {
+            res = new VariableLess(id,true,RelationType.EXCLUSIVE,poly,feature,target);
+        }
+        return new TruePolyBool(res).not();
+        // else {
+	    //    poly = poly.subtract(diff);
+	    //    return new FalsePolyBool(new VariableEquality(id,true,poly,feature, target));
+	    //}
 	}
 	
     static PolyBool normalizePolyGreater0(AbstractPoly arg, RelationType relation, FeatureType feature, TargetType target) {

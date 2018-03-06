@@ -35,7 +35,7 @@ services:
     - fsm
     volumes:
     - ".:/root/fsm"
-    - "../../base-receiver:/root/base-receiver"
+    - "../../relay-base:/root/relay-base"
     working_dir: "/root/fsm"
     entrypoint:
     - /bin/sh
@@ -43,8 +43,6 @@ services:
     - "wait-for-it.sh rabbit:5672 -- ./relay-fsm.sh"
   fsm:
     image: fsm:latest
-    volumes:
-    - "./fsm_demo:/root/fsm"
     build:
       context: fsm_demo
       args:

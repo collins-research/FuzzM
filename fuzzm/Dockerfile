@@ -16,7 +16,7 @@ RUN \
       -Dhttp.proxyHost=${proxy_host} -Dhttp.proxyPort=${proxy_port} \
       -Dhttps.proxyHost=${proxy_host} -Dhttps.proxyPort=${proxy_port} \
       clean compile assembly:single && \
-      cp /root/fuzzm/target/fuzzm-0.0.1-SNAPSHOT-jar-with-dependencies.jar /root/fuzzm/target/fuzzm.jar && \
+      mv /root/fuzzm/target/fuzzm*MAVEN*.jar /root/fuzzm/target/fuzzm.jar && \
       cp /root/fuzzm/target/fuzzm.jar  /usr/local/bin/fuzzm.jar && \
       cp /root/fuzzm/mvn-repo/jkind/jkind/uf/jkind-uf.jar /usr/local/bin/jkind.jar
 

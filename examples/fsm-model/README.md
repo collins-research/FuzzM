@@ -27,3 +27,7 @@ To stop the example:
 ```bash
 docker-compose down
 ```
+
+## Fuzz-Off
+
+See `fsm_demo/README.md` for directions to run Fuzz-Off

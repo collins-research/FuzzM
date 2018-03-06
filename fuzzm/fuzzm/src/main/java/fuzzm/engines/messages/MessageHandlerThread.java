@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import fuzzm.engines.EngineName;
+import fuzzm.util.ID;
 
 /**
  * As the Engine base class, Message Handler dictates
@@ -67,7 +68,9 @@ public abstract class MessageHandlerThread extends MessageHandler {
 		}
 	}
 	
+	@Override
 	final protected void handleMessage(ExitMessage m) {
+	    System.out.println(ID.location() + name + " saw ExitMessage " + m.sequence + " from " + m.source);
 		exit = true;
 	}
 

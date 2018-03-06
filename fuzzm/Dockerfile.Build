@@ -14,7 +14,8 @@ RUN \
       mvn \
       -Dhttp.proxyHost=${proxy_host} -Dhttp.proxyPort=${proxy_port} \
       -Dhttps.proxyHost=${proxy_host} -Dhttps.proxyPort=${proxy_port} \
-      clean compile assembly:single
+      clean compile assembly:single && \
+      cp /root/fuzzm/target/fuzzm*MAVEN*.jar /root/fuzzm/target/fuzzm.jar
 
 ENV proxy_host "" 
 ENV proxy_port ""

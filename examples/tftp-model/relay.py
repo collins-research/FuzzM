@@ -1,5 +1,6 @@
+#!/usr/bin/env python3
 # 
-# Copyright (C) 2017, Rockwell Collins
+# Copyright (C) 2018, Rockwell Collins
 # All rights reserved.
 # 
 # This software may be modified and distributed under the terms
@@ -12,11 +13,9 @@ import time
 
 dirname = os.path.dirname
 
-sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'base-receiver'))
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'relay-base'))
 
-import relay_receiver
-from fuzzm_basic_receiver import FuzzMRatSignal
-from relay_receiver import RelayModes
+from relay_base_class import FuzzMRelayBaseThreadClass
 from scapy.all import IP, UDP, Ether, RandShort, sr1
 
 
@@ -36,39 +35,24 @@ DATA_FLOW = [DATA, ACK, ERROR]
 
 
 ###############################################################################
-def fuzzer_resync(fuzz_receiver):
-    print("Synchronizing with fuzzer ..")
-    while fuzz_receiver.mode == RelayModes.RESYNC:
-        time.sleep(0)
-    spec = fuzz_receiver.spec
-    print("Synchronized.")
-    return spec
-
-
-###############################################################################
-def relay(fuzz_ip, target_ip):
-    fuzz_receiver = relay_receiver.RelayReceiver(fuzz_ip)
-
-    fuzz_receiver.start()
-
-    spec = fuzzer_resync(fuzz_receiver)
-
-    stream_active = False
-    local_port = 0
-    remote_port = 0
-    local_filter = ""
-
-    while True:
-        raw_test_vector = fuzz_receiver.get_next_test_vector()
-        test_vector = FuzzMRatSignal(raw_test_vector, spec)
-
-        # print("Relay says keys = %r" % test_vector.keys())
-        # print("Relay says vector = " + str(test_vector))
-
+class TFTPRelay(FuzzMRelayBaseThreadClass):
+    
+    def __init__(self,fuzz_ip,target_ip):
+        super(TFTPRelay,self).__init__(fuzz_ip,queue_bound=1200)
+        self.stream_active = False
+        self.target_ip = target_ip
+        self.local_port = 0
+        self.remote_port = 0
+        self.vector = 0
+        self.local_filter = ""
+    
+    def processTestVector(self,test_vector):
         payload_length = test_vector['payload_length']
+        print("Relay vector " + str(self.vector) + " at time " + str(time.time() // 1))
+        self.vector += 1
         print("Relay says payload_length: %r" % test_vector['payload_length'])
         payload = bytearray(payload_length)
-
+        
         for index in range(0, payload_length):
             try:
                 name = 'msg.payload[' + str(index) + ']'
@@ -77,7 +61,7 @@ def relay(fuzz_ip, target_ip):
             except KeyError:
                 # print("Relay says out of range payload index: " + str(index))
                 pass
-
+        
         opcode = bytearray(OPCODE_LENGTH)
         try:
             opcode[0] = (int(test_vector['msg.opcode']) >> 8) % 256
@@ -92,42 +76,48 @@ def relay(fuzz_ip, target_ip):
 
         if opcode[1] in INITIAL_REQUESTS:
             print("Start new session with opcode %d" % opcode[1])
-            stream_active = True
-            local_port = RandShort()._fix()
-            local_filter = "dst port " + str(local_port)
-
-            pkt = IP(dst=target_ip) / \
-                UDP(sport=local_port, dport=TFTP_PORT) / \
+            self.local_port = RandShort()._fix()
+            self.local_filter = "dst port " + str(self.local_port)
+            
+            pkt = IP(dst=self.target_ip) / \
+                UDP(sport=self.local_port, dport=TFTP_PORT) / \
                 (bytes(opcode) + bytes(payload))
+            
+            rx_pkt = sr1(pkt, filter=self.local_filter, timeout=1,verbose=False)
+            if rx_pkt:
+                self.stream_active = True
+                self.remote_port = rx_pkt[0].sport
 
-            rx_pkt = sr1(pkt, filter=local_filter, timeout=1,verbose=False)
-
-            remote_port = rx_pkt[0].sport()
-        elif stream_active and opcode[1] in DATA_FLOW:
+        elif self.stream_active and opcode[1] in DATA_FLOW:
             print("Session data with opcode %d" % opcode[1])
-            pkt = IP(dst=target_ip) / \
-                UDP(sport=local_port, dport=remote_port) / \
+            pkt = IP(dst=self.target_ip) / \
+                UDP(sport=self.local_port, dport=self.remote_port) / \
                 (bytes(opcode) + bytes(payload))
-
-            sr1(pkt, filter=local_filter, timeout=1,verbose=False)
+            
+            sr1(pkt, filter=self.local_filter, timeout=1,verbose=False)
         else:
-            stream_active = False
+            self.stream_active = False
             print("Opcode %d out of order" % opcode[1])
 
 
 ###############################################################################
 def main():
     parser = argparse.ArgumentParser(description="TFTP Relay")
-    parser.add_argument('-f', '--fuzz',
+    parser.add_argument('-a', '--amqp',
                         required=True,
-                        help="The address of the fuzzer (AMQP server)")
+                        help="The address of the AMQP server")
     parser.add_argument('-t', '--target',
                         required=True,
                         help="The address of the target TFTP server")
     args = parser.parse_args()
-
-    relay(args.fuzz, args.target)
-
+    relay = TFTPRelay(args.amqp,args.target)
+    relay.start()
+    try:
+        relay.join()
+    except KeyboardInterrupt:
+        relay.stop()
+        relay.join()
+    return 0
 
 ###############################################################################
 if __name__ == "__main__":

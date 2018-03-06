@@ -46,14 +46,15 @@ public class FuzzMConfiguration {
 	public List<VarDecl> inputNames;
 	//public Path     inputSpecFile;
 	public final Path     fuzzFile;
-	public final int      vectors;
+	public final int      solutions;
 	public String   target;
 	public List<SolverName>  userSolvers;
 	private IntervalVector span;
 	public final boolean noVectors;
 	public final boolean Proof;
+	public final boolean constraints;
 	//public boolean properties;
-	//public boolean asteroid;
+    //public boolean asteroid;
 	public final boolean throttle;
 	public String configDescription;
 	//public boolean unbiased;
@@ -73,13 +74,14 @@ public class FuzzMConfiguration {
 		*/
 		inputNames = processInputs();
 		fuzzFile = fuzzingDirectory.resolve("fuzz.lus");
-		vectors = settings.vectors;
+		solutions = settings.solutions;
 		employResources(fuzzingDirectory);
 		target = settings.target;
 		userSolvers = settings.userSolvers;
 		noVectors = settings.noVectors;
+		constraints = settings.constraints;
 		//properties = settings.properties;
-		//asteroid = settings.asteroid;
+        //asteroid = settings.asteroid;
 		throttle = settings.throttle;
 		//unbiased = settings.unbiased;
 		// This singular span instance will be updated when we learn the true bounds

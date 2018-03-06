@@ -44,7 +44,9 @@ public class FunctionLookup<T> {
 		Map<EvaluatableArgList,T> m1 = fmap.get(fn);
 		if (m1 == null) throw new IllegalArgumentException(fn + " not found in FunctionLookup " + this.toString());
 		T value = m1.get(args);
-		if (value == null) throw new IllegalArgumentException(fn + args.toString() + " not found in Map " + toString(fn,m1));
+		if (value == null) {
+		    throw new IllegalArgumentException(fn + args.toString() + " not found in Map " + toString(fn,m1));
+		}
 		return value;
 	}
 

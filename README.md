@@ -54,8 +54,8 @@ Instructions on installing Docker can be found [here](https://www.docker.com/com
 
 Instructions on installing Docker Compose can be found [here](https://docs.docker.com/compose/install/#install-compose)
 
-## Installing and Using FuzzM
+## Building, Installing, and Using FuzzM
 
-Information on installing FuzzM can be found [here](INSTALLING.md).
+Information on building and installing FuzzM can be found [here](INSTALLING.md).
 
 Information on using FuzzM can be found [here](USING.md).

@@ -13,15 +13,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeoutException;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
-
 import fuzzm.FuzzMConfiguration;
 import fuzzm.engines.messages.CounterExampleMessage;
 import fuzzm.engines.messages.ExitException;
 import fuzzm.engines.messages.ReceiveQueue;
 import fuzzm.engines.messages.TestVectorMessage;
+import fuzzm.sender.FlowControlledPublisher;
 import fuzzm.sender.OutputMsgTypes;
 import fuzzm.sender.PrintSender;
 import fuzzm.util.Debug;
@@ -47,8 +44,8 @@ public class OutputEngine extends Engine {
     final ReceiveQueue<TestVectorMessage> tvqueue;
     final ReceiveQueue<CounterExampleMessage> cexqueue;
     int sequenceID;
-    Channel channel;
-    Connection connection;
+    FlowControlledPublisher publisher;
+
     private static final String EXCHANGE_NAME = "fuzzm-output-engine";
     String configSpecMsg;
 
@@ -63,7 +60,7 @@ public class OutputEngine extends Engine {
         }
         sequenceID = 0;
         lastConfigSpecSentInstant = Instant.now();
-        
+
         configSpecMsg = "";
         for (TypedName key : cfg.getSpan().keySet()) {
             configSpecMsg = configSpecMsg.concat(" ");
@@ -75,15 +72,13 @@ public class OutputEngine extends Engine {
 
         if (cfg.target != null) {
             try {
-                ConnectionFactory factory = new ConnectionFactory();
-                factory.setHost(cfg.target);
-                connection = factory.newConnection();
-                channel = connection.createChannel();
-                channel.exchangeDeclare(EXCHANGE_NAME, "direct");
+                publisher = new FlowControlledPublisher(EXCHANGE_NAME, cfg.target);
+
             } catch (Exception e) {
                 e.printStackTrace();
                 System.exit(1);
             }
+
         }
     }
 
@@ -140,8 +135,10 @@ public class OutputEngine extends Engine {
             }
             // System.out.println(ID.location() + "UDP Sending Vector : " + txID);
             try {
-                channel.basicPublish(EXCHANGE_NAME, routingKey, null, value.getBytes("UTF-8"));
+                publisher.basicPublish(EXCHANGE_NAME, routingKey, null, value.getBytes("UTF-8"));
             } catch (IOException e) {
+                e.printStackTrace();
+            } catch (TimeoutException e) {
                 e.printStackTrace();
             }
             sequenceID++;
@@ -152,8 +149,11 @@ public class OutputEngine extends Engine {
     public void sendConfigSpec() {
         if (cfg.target != null) {
             try {
-                channel.basicPublish(EXCHANGE_NAME, OutputMsgTypes.CONFIG_SPEC_MSG_TYPE.toString(), null, configSpecMsg.getBytes("UTF-8"));
+                publisher.basicPublish(EXCHANGE_NAME, OutputMsgTypes.CONFIG_SPEC_MSG_TYPE.toString(), null,
+                        configSpecMsg.getBytes("UTF-8"));
             } catch (IOException e) {
+                e.printStackTrace();
+            } catch (TimeoutException e) {
                 e.printStackTrace();
             }
         }
@@ -176,8 +176,7 @@ public class OutputEngine extends Engine {
         }
         if (cfg.target != null) {
             try {
-                channel.close();
-                connection.close();
+                publisher.close();
             } catch (IOException | TimeoutException e) {
                 e.printStackTrace();
             }

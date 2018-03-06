@@ -21,7 +21,7 @@ public class FalsePolyBool extends PolyBool {
 	    assert(! cex);
 	}
 	
-	protected FalsePolyBool(VariableBoolean var) {
+	protected FalsePolyBool(Variable var) {
         this(! var.cex, new VariableList(var));
     }
 

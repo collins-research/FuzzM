@@ -16,19 +16,19 @@ services:
     entrypoint:
     - /bin/sh
     - -c
-    - "wait-for-it.sh -t 30 rabbit:5672 -- fuzzm --target rabbit /root/model/input.lus"
+    - "wait-for-it.sh -t 30 rabbit:5672 -- fuzzm --amqp rabbit /root/model/input.lus"
   rabbit:
     image: "rabbitmq:3-management"
     hostname: "rabbit"
     ports:
     - "15672"
     - "5672"
-  printreceiver:
+  printrelay:
     build: 
       context: .
       args:
       - proxy=${HTTP_PROXY}
-    image: printreceiver:latest
+    image: printrelay:latest
     links:
     - rabbit
     volumes:
@@ -36,4 +36,4 @@ services:
     entrypoint:
     - /bin/sh
     - -c
-    - "wait-for-it.sh -t 30 rabbit:5672 -- python3 print_receiver.py -H rabbit"
+    - "wait-for-it.sh -t 30 rabbit:5672 -- python3 print_relay.py -amqp rabbit"

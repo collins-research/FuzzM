@@ -14,14 +14,10 @@ package fuzzm.util;
  *
  */
 public class FuzzmName {
-	public static final String fuzzProperty   = "__fuzzProperty";
-	public static final String time           = "__time";
-	public static final String boundingBox    = "__boundingBox_";
-	public static final String pivotDot       = "__pivotDot_";
-	public static final String region         = "__region_";
-	public static final String assertion      = "__assertion_";
-	public static final String exprCtxName    = "_exprCtxName_";
-    public static final String polyConstraint = "__poly_constraint";
-    public static final String polyEval       = "__poly_eval";
-    public static final String polyTerm       = "__poly_term";
+	public static final IDString fuzzProperty   = IDString.newID("fuzzProperty");
+	public static final IDString time           = IDString.newID("time");
+	public static final IDString pivotDot       = IDString.newID("pivotDot");
+	public static final String   polyConstraint = "poly_constraint";
+    public static final String   polyEval       = "poly_eval";
+    public static final String   polyTerm       = "poly_term";
 }

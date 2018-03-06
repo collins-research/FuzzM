@@ -1,5 +1,7 @@
 *.TXT
 fsm
+fsm-hongg
+fsm-afl
 *.fuzz
 *.cov
 

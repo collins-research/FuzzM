@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import fuzzm.util.IDString;
 import jkind.lustre.BinaryExpr;
 import jkind.lustre.BinaryOp;
 import jkind.lustre.Expr;
@@ -59,19 +60,19 @@ public class ACExprCtx extends ExprCtx {
 		return treeExprRec(0,size-1);
 	}
 	
-	private Expr bindExprRec(int min, int max,int index, String base) {
+	private Expr bindExprRec(int min, int max,int index, IDString base) {
 		int span = max - min;
 		if (span == 0) return exprList.get(min);
 		if (span == 1) return new BinaryExpr(exprList.get(min),op,exprList.get(max));
 		int half = span/2;
 		Expr left  = bindExprRec(min,min+half,index*2+1,base);
 		Expr right = bindExprRec(min+half+1,max,index*2,base);
-		Expr res = define(base + index,type,new BinaryExpr(left,op,right));
+		Expr res = define(base.index(index),type,new BinaryExpr(left,op,right));
 		return res;
 	}
 	
 	@Override
-	public ExprCtx bind(String base) {
+	public ExprCtx bind(IDString base) {
 		int size = exprList.size();
 		if (size <= 0) return new ExprCtx(super.bind(base));
 		Expr lastExpr = bindExprRec(0,size-1,1,base);

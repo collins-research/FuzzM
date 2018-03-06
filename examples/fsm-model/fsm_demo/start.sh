@@ -1,3 +1,1 @@
-#!/bin/sh
-
-./fsm 2> /dev/null | grep "STATS"
+docker run -it --rm --name fuzz-off --privileged fuzz-off:latest

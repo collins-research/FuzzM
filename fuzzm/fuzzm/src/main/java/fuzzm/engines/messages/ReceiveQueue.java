@@ -67,7 +67,7 @@ public class ReceiveQueue<M extends Message> {
 				//System.out.println(ID.location() + "[wait] " + parent.name);							
 				synchronized (this) {
 					try {
-						wait();
+						wait(1000);
 					} catch (InterruptedException e) {}
 				}
 				//System.out.println(ID.location() + "[wake] " + parent.name);	

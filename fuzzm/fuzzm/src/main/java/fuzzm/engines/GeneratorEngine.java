@@ -64,8 +64,8 @@ public class GeneratorEngine extends Engine {
 	private BigFraction max = new BigFraction(BigInteger.valueOf( 100));
 	private BigInteger count = BigInteger.valueOf(100);
 	void generateTestVectors() throws ExitException {
-		while (true) {
-			GeneralizedMessage gm = gmqueue.pop();
+	    GeneralizedMessage gm = gmqueue.pop();
+        while (true) {
 			if (gm.id.constraintID != -1) {
 				// TODO: We probably want to re-architect this a bit
 				long startTime = System.currentTimeMillis();
@@ -99,6 +99,8 @@ public class GeneratorEngine extends Engine {
 					min = new BigFraction(step.negate());
 				}
 			}
+			GeneralizedMessage nx = gmqueue.pop_non_blocking();
+            if (nx != null) gm = nx;            
 		}
 	}
 	

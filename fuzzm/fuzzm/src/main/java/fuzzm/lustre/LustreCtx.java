@@ -11,6 +11,7 @@ package fuzzm.lustre;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import fuzzm.util.IDString;
 import jkind.lustre.Equation;
 import jkind.lustre.Expr;
 import jkind.lustre.IdExpr;
@@ -26,16 +27,16 @@ public class LustreCtx {
 		eqs = new ArrayList<>();
 		decls = new ArrayList<>();
 	}
-	
+
 	public LustreCtx(LustreCtx arg) {
 		this.eqs  = new ArrayList<>(arg.eqs);
 		this.decls = new ArrayList<>(arg.decls);
 	}
 	
-	public IdExpr define(String name, NamedType type, Expr body) {
-		IdExpr   stepID = new IdExpr(name);
+	public IdExpr define(IDString name, NamedType type, Expr body) {
+		IdExpr   stepID = new IdExpr(name.name());
 		eqs.add(new Equation(stepID,body));
-		decls.add(new VarDecl(name,type));		
+		decls.add(new VarDecl(name.name(),type));		
 		return stepID;
 	}
 	
@@ -43,9 +44,9 @@ public class LustreCtx {
         eqs.add(new Equation(lhs,rhs));
     }
     
-    public IdExpr declare(String name, NamedType type) {
-        IdExpr   stepID = new IdExpr(name);
-        decls.add(new VarDecl(name,type));      
+    public IdExpr declare(IDString name, NamedType type) {
+        IdExpr   stepID = new IdExpr(name.name());
+        decls.add(new VarDecl(name.name(),type));      
         return stepID;
     }
     
@@ -53,5 +54,11 @@ public class LustreCtx {
 		eqs.addAll(arg.eqs);
 		decls.addAll(arg.decls);
 	}
+	
+//	public void printDecls(String loc) {
+//	    for (VarDecl v: decls) {
+//	        System.out.println(loc + v);
+//	    }
+//	}
 	
 }

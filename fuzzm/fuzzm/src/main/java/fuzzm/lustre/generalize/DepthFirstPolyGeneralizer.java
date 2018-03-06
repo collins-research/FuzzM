@@ -42,7 +42,7 @@ import jkind.lustre.IdExpr;
 import jkind.lustre.IfThenElseExpr;
 import jkind.lustre.IntExpr;
 import jkind.lustre.NamedType;
-import jkind.lustre.Node;
+import jkind.lustre.Program;
 import jkind.lustre.RealExpr;
 import jkind.lustre.Type;
 import jkind.lustre.values.Value;
@@ -53,8 +53,8 @@ public class DepthFirstPolyGeneralizer extends DepthFirstSimulator {
 	final PolyFunctionLookup ftable;
 	final PolyFunctionMap    fmap;
 	
-	public DepthFirstPolyGeneralizer(FunctionLookupEV fns, Node node) {
-		super(fns,node);
+	public DepthFirstPolyGeneralizer(FunctionLookupEV fns, Program prog) {
+		super(fns,prog);
 		ftable = new PolyFunctionLookup(fns.fsig);
 		fmap   = new PolyFunctionMap();
 		addGlobalUFInvariants(fns);
@@ -213,31 +213,35 @@ public class DepthFirstPolyGeneralizer extends DepthFirstSimulator {
 	@Override
 	public EvaluatableValue visit(FunctionCallExpr e) {
         String fn = e.function;
-		List<EvaluatableValue> args = new ArrayList<>();
-		EvaluatableArgList sig = new EvaluatableArgList();
+		List<EvaluatableValue> polyArgs = new ArrayList<>();
+		EvaluatableArgList cexArgs = new EvaluatableArgList();
 		List<NamedType> argtypes = ftable.getArgTypes(e.function);
-		List<VariableID> ufVarArgs = ftable.getArgVarValues(fn,sig);
-        int index = 0;
+		int index = 0;
 		for (Expr v: e.args) {
-		    GlobalState.addReMap(ufVarArgs.get(index), step, v);
 			PolyEvaluatableValue ev = (PolyEvaluatableValue) v.accept(this);
-			args.add(ev);
-			sig.add(Rat.ValueFromTypedFraction(argtypes.get(index), ev.cex()));
+			polyArgs.add(ev);
+			cexArgs.add(Rat.ValueFromTypedFraction(argtypes.get(index), ev.cex()));
 			index++;
+		}
+		List<VariableID> ufVarArgs = ftable.getArgVarValues(fn,cexArgs);
+		index = 0;
+        for (Expr v: e.args) {
+		    GlobalState.addReMap(ufVarArgs.get(index), step, v);
+		    index++;
 		}
 		// From the function name and the arguments we can get
 		// the poly args and the poly return value.
-		List<PolyEvaluatableValue> ufPolyArgs = ftable.getArgPolyValues(fn,sig);
-		PolyEvaluatableValue ufPolyValue = ftable.getFnPolyValue(fn, sig);
+		List<PolyEvaluatableValue> ufPolyArgs = ftable.getArgPolyValues(fn,cexArgs);
+		PolyEvaluatableValue ufPolyValue = ftable.getFnPolyValue(fn, cexArgs);
 		index = 0;
-		for (EvaluatableValue v: args) {
+		for (EvaluatableValue v: polyArgs) {
 			BooleanPoly res = (BooleanPoly) v.equalop(ufPolyArgs.get(index));
 			if (Debug.isEnabled()) System.out.println(ID.location() + "Adding " + e.function + " Instance Constraint");
 			GlobalState.addConstraint(res.value);
 			index++;
 		}
 		if (Debug.isEnabled()) System.out.println(ID.location() + e + " evaluated to " + ufPolyValue + " [" + ufPolyValue.cex() + "]");
-		GlobalState.addReMap(ftable.getFnVarValue(fn,sig), step, e);
+		GlobalState.addReMap(ftable.getFnVarValue(fn,cexArgs), step, e);
 		return ufPolyValue;
 	}
 

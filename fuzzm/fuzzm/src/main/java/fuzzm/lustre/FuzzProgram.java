@@ -11,6 +11,7 @@ package fuzzm.lustre;
 import fuzzm.util.Debug;
 import fuzzm.util.FuzzmName;
 import fuzzm.util.ID;
+import fuzzm.util.IDString;
 import jkind.lustre.Equation;
 import jkind.lustre.IdExpr;
 import jkind.lustre.Location;
@@ -34,13 +35,13 @@ public class FuzzProgram {
 		NodeBuilder NodeB = new NodeBuilder(node);
 		NodeB = NodeB.clearProperties();
 		NodeB = NodeB.clearIvc();
-        String pname = FuzzmName.fuzzProperty;
-		NodeB = NodeB.addLocal(new VarDecl(Location.NULL,pname,NamedType.BOOL));
+        IDString pname = FuzzmName.fuzzProperty;
+		NodeB = NodeB.addLocal(new VarDecl(Location.NULL,pname.name(),NamedType.BOOL));
 		NodeB = NodeB.addEquations(constraint.eqs);
 		NodeB = NodeB.addLocals(constraint.decls);
 		if (Debug.isEnabled()) System.out.println(ID.location() + "Constraint: " + constraint.getExpr());
-		NodeB = NodeB.addEquation(new Equation(new IdExpr(pname),constraint.getExpr()));
-		NodeB = NodeB.addProperty(pname);
+		NodeB = NodeB.addEquation(new Equation(new IdExpr(pname.name()),constraint.getExpr()));
+		NodeB = NodeB.addProperty(pname.name());
 		Node z = NodeB.build();
 		return z;
 	}

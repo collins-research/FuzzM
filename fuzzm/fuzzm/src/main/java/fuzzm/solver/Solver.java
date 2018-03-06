@@ -153,7 +153,6 @@ public class Solver {
                     bw.write(line);
                     bw.newLine();
                 }
-
             }
             bw.close();
             br.close();
@@ -161,17 +160,16 @@ public class Solver {
             e.printStackTrace();
             System.exit(1);
         }
-
     }
-
-    public static String jarPath() {
-        File jarDir = new File(ClassLoader.getSystemClassLoader().getResource(".").getPath());
-        return jarDir.getAbsolutePath();
-      }
+    
+    
+    public static String jarPath(final Class<?> c) {
+        return PathUtils.pathToRunningJar();
+    }
     
     private String mvn_repo_path() throws FileNotFoundException {
         String path = ".";
-        String jar_path = jarPath();
+        String jar_path = jarPath(Solver.class);
         // MVN repo is here: FuzzM/fuzzm/fuzzm/mvn-repo
         try {
             // Eclipse typically executes from FuzzM/fuzzm/fuzzm/target/classes

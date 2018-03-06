@@ -14,6 +14,7 @@ public class StepExpr {
    public int  step;
    public Expr expr;
    public StepExpr(int step, Expr expr) {
+       assert(step >= 0);
        this.step = step;
        this.expr = expr;
    }

@@ -11,12 +11,12 @@ RUN \
    pika \
    pyqtgraph
 
-ADD . /root/base-receiver
+ADD . /root/relay-base
 
-WORKDIR /root/base-receiver
+WORKDIR /root/relay-base
 
 ADD scripts/wait-for-it.sh /usr/local/bin/
 
 RUN chmod +x /usr/local/bin/wait-for-it.sh
 
-ENTRYPOINT [ "python3", "print_receiver.py" ]
+ENTRYPOINT [ "python3", "print_relay.py" ]

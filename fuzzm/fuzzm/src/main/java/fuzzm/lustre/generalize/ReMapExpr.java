@@ -47,8 +47,9 @@ public class ReMapExpr {
             values = new ArrayList<>(remap.get(key));
         } else {
             values = new ArrayList<>();
-            Expr zed = (key.role == VariableRole.AUXILIARY) ? key.cexExpr() : namedExpr(key);            
-            values.add(new StepExpr(key.name.time,zed));
+            Expr zed = (key.role == VariableRole.AUXILIARY) ? key.cexExpr() : namedExpr(key); 
+            int  time = (key.role == VariableRole.AUXILIARY) ? 0 : key.name.time;
+            values.add(new StepExpr(time,zed));
         }
         return values;
     }

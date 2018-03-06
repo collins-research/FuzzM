@@ -15,6 +15,7 @@ import fuzzm.util.Debug;
 import fuzzm.util.EvaluatableSignal;
 import fuzzm.util.EvaluatableVector;
 import fuzzm.util.ID;
+import fuzzm.util.IDString;
 import fuzzm.util.ProofWriter;
 import fuzzm.util.StringMap;
 import fuzzm.util.TypedName;
@@ -34,7 +35,6 @@ import jkind.lustre.Program;
 import jkind.lustre.Type;
 import jkind.lustre.UnaryExpr;
 import jkind.lustre.UnaryOp;
-import jkind.lustre.builders.ProgramBuilder;
 import jkind.lustre.values.Value;
 import jkind.lustre.visitors.TypeReconstructor;
 import jkind.util.Util;
@@ -51,22 +51,20 @@ public abstract class DepthFirstSimulator extends BaseEvaluatableValueEvaluator 
 	private EvaluatableSignal state;
 	private int thms = 0;
 	
-	protected DepthFirstSimulator(FunctionLookupEV fns, Node node) {
+	protected DepthFirstSimulator(FunctionLookupEV fns, Program prog) {
 		super(fns);
+		Node node = prog.getMainNode();
 		for (Equation eq : node.equations) {
 			equations.put(((IdExpr) eq.lhs.get(0)).id,eq.expr);
 		}
 		assertions = node.assertions;
 		types = new StringMap<Type>(Util.getTypeMap(node));
-		ProgramBuilder pb = new ProgramBuilder();
-		pb.addNode(node);
-		Program prog = pb.build();
 		tx = new TypeReconstructor(prog);
 		tx.setNodeContext(node);
 	}
 
 	
-	public PolyBool simulateProperty(EvaluatableSignal state, String property) {
+	public PolyBool simulateProperty(EvaluatableSignal state, String name, IDString property) {
 		assert(step == 0);
 		int k = state.size();
 		System.out.println(ID.location() + "Counterexample Depth : " + k);
@@ -95,10 +93,10 @@ public abstract class DepthFirstSimulator extends BaseEvaluatableValueEvaluator 
 			}
 		}
 		step = k-1;
-		Expr propExpr = equations.get(property);
+		Expr propExpr = equations.get(property.name());
 		PolyEvaluatableValue propVal = (PolyEvaluatableValue) eval(propExpr);
 		if (Debug.isEnabled()) 
-		    System.out.println(ID.location() + property + " = " + propExpr + " evaluated to " + propVal + " [" + propVal.cex() + "]");
+		    System.out.println(ID.location() + name + " = " + propExpr + " evaluated to " + propVal + " [" + propVal.cex() + "]");
 		PolyEvaluatableValue constraintVal = (PolyEvaluatableValue) propVal.not();
 		assert(constraintVal.cex().signum() != 0);
 		EvaluatableValue accumulatedConstraints = accumulatedAssertions.and(constraintVal);

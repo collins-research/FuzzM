@@ -21,6 +21,7 @@ import jkind.lustre.IntExpr;
 import jkind.lustre.NamedType;
 import jkind.lustre.Node;
 import jkind.lustre.Program;
+import jkind.lustre.SubrangeIntType;
 import jkind.lustre.VarDecl;
 import jkind.lustre.builders.NodeBuilder;
 import jkind.lustre.visitors.AstMapVisitor;
@@ -61,8 +62,15 @@ public class RemoveEnumTypes extends AstMapVisitor {
 		    Expr constraint = newConstraint(e.id,low,high);
 		    typeConstraints.add(constraint);
 			return new VarDecl(e.id, NamedType.INT);
-		} else {
-			return e;
+		} else if (e.type instanceof SubrangeIntType) {
+	            SubrangeIntType sit = (SubrangeIntType) e.type;
+	            BigInteger low  = sit.low;
+	            BigInteger high = sit.high;
+	            Expr constraint = newConstraint(e.id,low,high);
+	            typeConstraints.add(constraint);
+	            return new VarDecl(e.id, NamedType.INT);
+	    } else {
+	        return e;
 		}
 	}
 }

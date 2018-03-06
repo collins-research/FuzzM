@@ -100,7 +100,7 @@ public class SolverEngine extends Engine {
 				    RatSignal counterExample = sr.cex;
 				    int k = counterExample.size();
 				    if (k > 0) {
-				        // System.err.println(ID.location() + "Solver Solution : " + sr);
+				        //System.err.println(ID.location() + "Solver Solution : " + sr);
 				        //Map<String,EvaluatableValue> intervalValues[] = counterExample.intervalValues();
 				        //EventBasedSimulator ratSim = new EventBasedIntervalSimulator(intervalValues, FuzzMName.fuzzProperty, newMain);
 				        //IntervalOptimizer optimizer = new IntervalOptimizer(ratSim);

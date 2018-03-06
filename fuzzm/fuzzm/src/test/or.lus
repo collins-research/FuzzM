@@ -1,0 +1,118 @@
+-- 
+-- Copyright (C) 2018, Rockwell Collins
+-- All rights reserved.
+-- 
+-- This software may be modified and distributed under the terms
+-- of the 3-clause BSD license.  See the LICENSE file for details.
+-- 
+
+type enumType = enum {L_AW, L_BX, L_CY, L_DZ};
+
+node main(
+  enumValue : enumType;
+  intValue  : int[2];
+  bool1     : bool;
+  bool2     : bool;
+  bool3     : bool
+) returns (
+);
+var
+  p0: bool;
+  p1: bool;
+  p2: bool;
+  p3: bool;
+  p4: bool;
+  v1,v2,v3: bool;
+  p5,p6,p7,p8: bool;
+  q5,q6,q7,q8: bool;
+  r5,r6,r7,r8: bool;
+  s5,s6,s7,s8: bool;
+  t1,t2,t3: bool;
+  u1: bool;
+let
+
+  assert(0 <= intValue[0] and intValue[0] <= 100);
+  assert(0 <= intValue[1] and intValue[1] <= 100);
+  
+  p0 = (enumValue = L_AW) or (enumValue = L_BX) or (enumValue = L_CY) or (enumValue = L_DZ);
+
+  --%PROPERTY p0;
+
+  p1 = (intValue[0] < 10 and enumValue = L_AW     and      bool1  and (not bool2) and bool3) or 
+       (intValue[0] > 20 and enumValue = L_BX and (not bool1) and (not bool2) and (not bool3));
+
+  --%PROPERTY p1;
+
+  p2 = (intValue[0] < 10 or intValue[0] > 20) and (enumValue = L_AW or enumValue = L_CY) and (bool1 or bool2 or bool3);
+
+  --%PROPERTY p2;
+
+  p3 = (((intValue[0] = 2) or (intValue[1] = 3)) and ((intValue[0] = 3) or (intValue[1] = 2)));
+
+  --%PROPERTY p3;
+
+  p4 = (((0 < intValue[0]) and (intValue[0] < 10) and (intValue[1] > 10)) or ((20 < intValue[0]) and (intValue[0] < 30) and (intValue[1] < 10)));
+
+  --%PROPERTY p4;
+
+  v1 = (((0 < intValue[0]) or (10 < intValue[0])) and ((intValue[0] < 90) or (intValue[0] < 80)));
+  v2 = (((0 < intValue[0]) or (intValue[0] < 80)) and ((intValue[0] < 90) or (10 < intValue[0])));
+  v3 = (((0 < intValue[0]) and (intValue[0] < 10)) or ((20 < intValue[0]) and (intValue[0] < 30)));
+
+  --%PROPERTY v1;
+  --%PROPERTY v2;
+  --%PROPERTY v3;
+
+  p5 = (((10 <  intValue[0]) and (10 >  intValue[1]) and (enumValue = L_AW)) or ((10 >  intValue[0]) and (10 <  intValue[1]) and (enumValue = L_DZ)));
+  p6 = (((10 <  intValue[0]) and (10 >= intValue[1]) and (enumValue = L_AW)) or ((10 >= intValue[0]) and (10 <  intValue[1]) and (enumValue = L_DZ)));
+  p7 = (((10 <= intValue[0]) and (10 >  intValue[1]) and (enumValue = L_AW)) or ((10 >  intValue[0]) and (10 <= intValue[1]) and (enumValue = L_DZ)));
+  p8 = (((10 <= intValue[0]) and (10 >= intValue[1]) and (enumValue = L_AW)) or ((10 >= intValue[0]) and (10 <= intValue[1]) and (enumValue = L_DZ)));
+
+  --%PROPERTY p5;
+  --%PROPERTY p6;
+  --%PROPERTY p7;
+  --%PROPERTY p8;
+
+  q5 = (((10 = intValue[0]) and (10 >  intValue[1]) and (enumValue = L_AW)) or ((10 >  intValue[0]) and (10 = intValue[1]) and (enumValue = L_DZ)));
+  q6 = (((10 = intValue[0]) and (10 >= intValue[1]) and (enumValue = L_AW)) or ((10 >= intValue[0]) and (10 = intValue[1]) and (enumValue = L_DZ)));
+  q7 = (((10 = intValue[0]) and (10 >  intValue[1]) and (enumValue = L_AW)) or ((10 <  intValue[0]) and (10 = intValue[1]) and (enumValue = L_DZ)));
+  q8 = (((10 = intValue[0]) and (10 >= intValue[1]) and (enumValue = L_AW)) or ((10 <= intValue[0]) and (10 = intValue[1]) and (enumValue = L_DZ)));
+
+  --%PROPERTY q5;
+  --%PROPERTY q6;
+  --%PROPERTY q7;
+  --%PROPERTY q8;
+
+  r5 = ((((10 <  intValue[0]) or (10 >  intValue[0])) and (enumValue = L_AW)) or (((10 <  intValue[1]) or (10 >  intValue[1])) and (enumValue = L_DZ)));
+  r6 = ((((10 <  intValue[0]) or (10 >= intValue[0])) and (enumValue = L_AW)) or (((10 <  intValue[1]) or (10 >= intValue[1])) and (enumValue = L_DZ)));
+  r7 = ((((10 <= intValue[0]) or (10 >  intValue[0])) and (enumValue = L_AW)) or (((10 <= intValue[1]) or (10 >  intValue[1])) and (enumValue = L_DZ)));
+  r8 = ((((10 <= intValue[0]) or (10 >= intValue[0])) and (enumValue = L_AW)) or (((10 <= intValue[1]) or (10 >= intValue[1])) and (enumValue = L_DZ)));
+
+  --%PROPERTY r5;
+  --%PROPERTY r6;
+  --%PROPERTY r7;
+  --%PROPERTY r8;
+
+  s5 = ((((10 = intValue[0]) or (10 >  intValue[0])) and (enumValue = L_AW)) or (((10 = intValue[1]) or (10 >  intValue[1])) and (enumValue = L_DZ)));
+  s6 = ((((10 = intValue[0]) or (10 >= intValue[0])) and (enumValue = L_AW)) or (((10 = intValue[1]) or (10 >= intValue[1])) and (enumValue = L_DZ)));
+  s7 = ((((10 = intValue[0]) or (10 <  intValue[0])) and (enumValue = L_AW)) or (((10 = intValue[1]) or (10 >  intValue[1])) and (enumValue = L_DZ)));
+  s8 = ((((10 = intValue[0]) or (10 <= intValue[0])) and (enumValue = L_AW)) or (((10 = intValue[1]) or (10 >= intValue[1])) and (enumValue = L_DZ)));
+
+  --%PROPERTY s5;
+  --%PROPERTY s6;
+  --%PROPERTY s7;
+  --%PROPERTY s8;
+
+  t1 = (((10 < intValue[0]) and (enumValue = L_AW)) or ((10 >  intValue[0]) and (enumValue = L_DZ))) and (enumValue = L_AW) and (9  < intValue[0]);
+  t2 = (((10 < intValue[0]) and (enumValue = L_AW)) or ((10 >  intValue[0]) and (enumValue = L_DZ))) and (enumValue = L_AW) and (10 < intValue[0]);
+  t3 = (((10 < intValue[0]) and (enumValue = L_AW)) or ((10 >  intValue[0]) and (enumValue = L_DZ))) and (enumValue = L_AW) and (11 < intValue[0]);
+
+  --%PROPERTY t1;
+  --%PROPERTY t2;
+  --%PROPERTY t3;
+
+  u1 = ((10 < intValue[0]) or (enumValue = L_AW)) and ((15 < intValue[0]) or (enumValue = L_AW)) and (0 = intValue[0]) and (enumValue = L_AW);
+
+  --%PROPERTY u1;
+
+tel;

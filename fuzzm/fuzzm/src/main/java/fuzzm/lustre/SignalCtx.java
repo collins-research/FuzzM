@@ -13,6 +13,7 @@ import java.util.Collection;
 import java.util.List;
 
 import fuzzm.util.FuzzmName;
+import fuzzm.util.IDString;
 import jkind.lustre.BinaryExpr;
 import jkind.lustre.BinaryOp;
 import jkind.lustre.Expr;
@@ -24,7 +25,7 @@ import jkind.lustre.NamedType;
 public class SignalCtx extends ExprCtx {
 
 	private List<Expr> exprList = new ArrayList<>();
-	private Expr time = new IdExpr(FuzzmName.time);
+	private Expr time = new IdExpr(FuzzmName.time.name());
 			
 	public SignalCtx(NamedType type) {
 		super(type, ExprCtx.defaultValue(type));
@@ -60,19 +61,19 @@ public class SignalCtx extends ExprCtx {
 		return new IfThenElseExpr(test,left,right);
 	}
 	
-	private Expr bindExprRec(int min, int max,int index, String base) {
+	private Expr bindExprRec(int min, int max,int index, IDString base) {
 		int span = max - min;
 		if (span == 0) return exprList.get(min);
 		if (span == 1) return alternation(time,min,exprList.get(min),exprList.get(max));
 		int half = span/2;
 		Expr left  = bindExprRec(min,min+half,index*2+1,base);
 		Expr right = bindExprRec(min+half+1,max,index*2,base);
-		Expr res = define(base + index,type,alternation(time,min+half,left,right));
+		Expr res = define(base.index(index),type,alternation(time,min+half,left,right));
 		return res;
 	}
 	
 	@Override
-	public ExprCtx bind(String base) {
+	public ExprCtx bind(IDString base) {
 		int size = exprList.size();
 		if (size <= 0) return new ExprCtx(super.bind(base));
 		Expr lastExpr = bindExprRec(0,size-1,1,base);

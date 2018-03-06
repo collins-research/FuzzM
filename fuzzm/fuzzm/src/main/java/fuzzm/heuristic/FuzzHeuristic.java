@@ -9,12 +9,10 @@
 package fuzzm.heuristic;
 
 import fuzzm.lustre.BooleanCtx;
-import fuzzm.util.FuzzmName;
 import fuzzm.util.ID;
 import fuzzm.util.RatSignal;
 import jkind.lustre.BoolExpr;
 import jkind.lustre.Expr;
-import jkind.lustre.IdExpr;
 import jkind.lustre.UnaryExpr;
 import jkind.lustre.UnaryOp;
 /***

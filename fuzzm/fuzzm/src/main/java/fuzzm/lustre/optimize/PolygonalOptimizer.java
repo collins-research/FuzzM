@@ -14,13 +14,14 @@ import fuzzm.solver.SolverResults;
 import fuzzm.util.Debug;
 import fuzzm.util.EvaluatableSignal;
 import fuzzm.util.ID;
+import fuzzm.util.IDString;
 import fuzzm.util.ProofWriter;
 import fuzzm.util.RatSignal;
 import jkind.lustre.Program;
 
 public class PolygonalOptimizer {
 
-	public static SolverResults optimize(SolverResults sln, RatSignal target, String name, String property, Program main) {
+	public static SolverResults optimize(SolverResults sln, RatSignal target, String name, IDString property, Program main) {
 		//System.out.println(ID.location() + sln);
 		EvaluatableSignal cex = sln.cex.evaluatableSignal();
 		
@@ -28,7 +29,7 @@ public class PolygonalOptimizer {
 		// System.err.println(ID.location() + "Solution poly      = " + res.result);
 		SolverResults opsln = res.result.optimize(sln,res.fmap,target);
 		if (Debug.proof()) {
-		    ProofWriter.printEval(ID.location(), "optEval_" + name, res.result.toACL2(), opsln.cex.toACL2());
+		    ProofWriter.printEval(ID.location(), "optEval_" + property.name(), res.result.toACL2(), opsln.cex.toACL2());
 		}		
 		return opsln;
 	}

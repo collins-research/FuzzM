@@ -20,6 +20,7 @@ import fuzzm.poly.VariableID;
 import fuzzm.util.Debug;
 import fuzzm.util.EvaluatableSignal;
 import fuzzm.util.ID;
+import fuzzm.util.IDString;
 import fuzzm.value.hierarchy.BooleanType;
 import fuzzm.value.hierarchy.EvaluatableValue;
 import fuzzm.value.hierarchy.IntegerType;
@@ -36,10 +37,10 @@ public class PolygonalGeneralizer {
 	protected final DepthFirstPolyGeneralizer simulator;
 
 	public PolygonalGeneralizer(FunctionLookupEV fev, Program program) {
-		this.simulator = new DepthFirstPolyGeneralizer(fev, program.getMainNode());
+		this.simulator = new DepthFirstPolyGeneralizer(fev, program);
 	}
 	
-	private PolyBool generalize(EvaluatableSignal cex, String property) {
+	private PolyBool generalize(EvaluatableSignal cex, String name, IDString property) {
 		//System.out.println(ID.location() + "Counterexample Depth : " + cex.size());
 		EvaluatableSignal state = new EvaluatableSignal();
 		List<SignalName> signals = cex.getSignalNames();
@@ -63,7 +64,7 @@ public class PolygonalGeneralizer {
 				throw new IllegalArgumentException();
 			}
 		}
-		PolyBool polyRes = simulator.simulateProperty(state, property);
+		PolyBool polyRes = simulator.simulateProperty(state, name, property);
 		if (! (polyRes.cex && !polyRes.isNegated())) {
 		    System.err.println(ID.location() + polyRes.toString());
 		    assert(false);
@@ -76,13 +77,13 @@ public class PolygonalGeneralizer {
 		return polyRes;
 	}
 	
-	public static PolyGeneralizationResult generalizeInterface(EvaluatableSignal cex, String name, String property, FunctionLookupEV fns, Program testMain) {
+	public static PolyGeneralizationResult generalizeInterface(EvaluatableSignal cex, String name, IDString property, FunctionLookupEV fns, Program testMain) {
 		PolyGeneralizationResult res;
 		synchronized (GlobalState.class) {
 			long startTime = System.currentTimeMillis();
 			try {
 				PolygonalGeneralizer pgen2 = new PolygonalGeneralizer(fns,testMain);			
-				PolyBool g2 = pgen2.generalize(cex,property);
+				PolyBool g2 = pgen2.generalize(cex,name,property);
 				assert(g2.cex && !g2.isNegated());
 				PolyFunctionMap fmap = pgen2.simulator.fmap;
 				res = new PolyGeneralizationResult(g2,fmap,GlobalState.getReMap());
@@ -96,7 +97,7 @@ public class PolygonalGeneralizer {
                     System.err.println(ID.location() + "Initial CEX : " + cex);
 				    System.err.println(ID.location() + "Initial FNS : " + fns);
                     PolygonalGeneralizer pgen2 = new PolygonalGeneralizer(fns,testMain);			
-					PolyBool g2 = pgen2.generalize(cex,property);
+					PolyBool g2 = pgen2.generalize(cex,name,property);
 					PolyFunctionMap fmap = pgen2.simulator.fmap;
 					res = new PolyGeneralizationResult(g2,fmap,GlobalState.getReMap());
 				} catch (Throwable z) {

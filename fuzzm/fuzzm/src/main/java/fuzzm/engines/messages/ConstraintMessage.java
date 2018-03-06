@@ -37,7 +37,6 @@ public class ConstraintMessage extends FeatureMessage {
 	
 	@Override
 	public void handleAccept(MessageHandler handler) {
-		// TODO Auto-generated method stub
 		handler.handleMessage(this);
 	}
 	

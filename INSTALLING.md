@@ -57,7 +57,9 @@ To terminate the fuzzing session, type:
 
 ## Manual Build and Execution
 
-Stand-alone versions of FuzzM can be built manually using Docker.
+Stand-alone versions of FuzzM can be built manually using either Docker or Maven.
+
+All of the manual build procedures save the resulting jar file in `FuzzM/fuzzm/fuzzm/bin/fuzzm.jar`
 
 ### Docker Build
 
@@ -71,9 +73,17 @@ From the `FuzzM/fuzzm` directory:
 
 `docker-compose down`
 
-The resulting jar file is stored in `FuzzM/fuzzm/fuzzm/bin/fuzzm.jar`.  
+### UNIX Docker Build Script
 
-### Manual Invocation
+`FuzzM/fuzzm/scipts/fuzzm-docker-build.sh`
+
+### UNIX Maven Build Script
+
+If Maven is installed, the following script can be used to build FuzzM:
+
+`FuzzM/fuzzm/scipts/fuzzm-mvn-build.sh`
+
+## Manual Invocation
 
 To invoke this file using java:
 

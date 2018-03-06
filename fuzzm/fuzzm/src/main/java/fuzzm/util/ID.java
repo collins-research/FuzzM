@@ -61,23 +61,35 @@ public class ID {
 		return res;
 	}
 
-	static String liftID(String node, int uid, String child) {
-		return node + uid + child;
-	}
-
-	static String newID(String lhs, int uid) {
-		return "_" + lhs + "_" + uid;
-	}
-	
 	public static String cleanString(String arg) {
 	    if (arg == null) return arg;
         int size = arg.length();
         String res = "";
         for (int i=0;i<size;i++) {
             char c = arg.charAt(i);
-            if (c == '|') {
+            if (c == ' ') {
+                res += "_";
+            } else if (c == '|') {
                 res += "_";
             } else if (c == '#') {
+                res += "_";
+            } else if (c == '(') {
+                res += "_";
+            } else if (c == ')') {
+                res += "_";
+            } else if (c == '=') {
+                res += "_";
+            } else if (c == '-') {
+                res += "_";
+            } else if (c == '/') {
+                res += "_";
+            } else if (c == '.') {
+                res += "_";
+            } else if (c == ',') {
+                res += "_";
+            } else if (c == '[') {
+                res += "_";
+            } else if (c == ']') {
                 res += "_";
             } else {
                 res += c;

@@ -11,6 +11,7 @@ package fuzzm.lustre;
 import java.util.List;
 
 import fuzzm.util.FuzzmName;
+import fuzzm.util.IDString;
 import jkind.lustre.BinaryExpr;
 import jkind.lustre.BinaryOp;
 import jkind.lustre.Equation;
@@ -66,8 +67,9 @@ public class AddSignals {
 	private static Node add_time_to_main(Node node) {
 		// _k = 0 -> ((pre _k) + 1);
 		NodeBuilder nb = new NodeBuilder(node);
-		nb.addOutput(new VarDecl(FuzzmName.time,NamedType.INT));
-		IdExpr k = new IdExpr(FuzzmName.time);
+		IDString time = FuzzmName.time;
+		nb.addOutput(new VarDecl(time.name(),NamedType.INT));
+		IdExpr k = new IdExpr(time.name());
 		Expr pre = new UnaryExpr(UnaryOp.PRE, k);
 		Expr one = new IntExpr(1);
 		Expr plus = new BinaryExpr(pre, BinaryOp.PLUS, one);

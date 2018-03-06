@@ -8,8 +8,6 @@
  */
 package fuzzm.engines.messages;
 
-import fuzzm.util.ID;
-
 /**
  * A queue for outgoing messages.
  */
@@ -22,13 +20,13 @@ public class TransmitQueue<M extends Message> extends TransmitQueueBase {
 	public void push(M m) {
 		do {
 			if (paused()) {
-				System.out.println(ID.location() + "[pause]  " + parent.name);
+				//System.out.println(ID.location() + "[pause]  " + parent.name);
 				synchronized (this) {
 					try {					
-						wait();
+						wait(1000);
 					} catch (InterruptedException e) {}
 				}
-				System.out.println(ID.location() + "[resume] " + parent.name);				
+				//System.out.println(ID.location() + "[resume] " + parent.name);				
 			}
 		} while (paused());
 		parent.broadcast(m);
@@ -37,13 +35,13 @@ public class TransmitQueue<M extends Message> extends TransmitQueueBase {
 	public void pushTest(TestVectorMessage m) {
 		do {
 			if (paused()) {
-				System.out.println(ID.location() + "[pause]  " + parent.name);			
+				//System.out.println(ID.location() + "[pause]  " + parent.name);			
 				synchronized (this) {
 					try {
-						wait();
+						wait(1000);
 					} catch (InterruptedException e) {};
 				}
-				System.out.println(ID.location() + "[resume] " + parent.name);
+				//System.out.println(ID.location() + "[resume] " + parent.name);
 			}
 		} while (paused());
 		parent.broadcast(m);

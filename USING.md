@@ -4,7 +4,7 @@ FuzzM (Fuzzing with Models) is a gray box model-based fuzzing
 framework that employs
 [Lustre](https://en.wikipedia.org/wiki/Lustre_(programming_language))
 as a modeling and specification language and leverages the
-[JKind](https://github.com/agacek/jkindmodel) model checker as a
+[JKind](https://github.com/agacek/jkind) model checker as a
 constraint solver.  Fuzzing a target system with FuzzM requires the
 development of a Lustre _model_ and a _relay_.  The _model_ defines
 the inputs to the system and specifies behaviors, in the form of
@@ -33,8 +33,8 @@ then passing them on to the target.
 
 ## The FuzzM Engine
 
-The FuzzM engine is often started and stopped using Docker Compose.  It is
-possible, however, to invoke it directly.
+The FuzzM engine is often started and stopped using Docker Compose.  Once [built](INSTALLING.md),
+however, it is possible to invoke the fuzzer directly.
 
 `java -ea -jar FuzzM/fuzzm/fuzzm/bin/fuzzm.jar -fuzzm [Options] /path/to/file.lus`
 
@@ -46,12 +46,14 @@ The command line options for fuzzm are listed below:
 
 ```
 usage: fuzzm [options] <input>
+ -amqp <arg>      URL of AMQP server [null]
+ -constraints     Treat Lustre properties as constraints [false]
  -help            print this message
  -no_vectors      Suppress test vector generation (debug) [false]
+ -proof           Generate a validating proof script (debug) [false]
+ -solutions <arg> Total number of constraint solutions to attempt (-1 = forever) [-1]
  -solver <arg>    Use Only Specified Solver [null]
- -target <arg>    AMQP Address [null]
  -throttle        Throttle vector generation (debug) [false]
- -vectors <arg>   Number of vectors to generate (-1 = forever) [-1]
  -version         display version information
  -wdir <arg>      Path to temporary working directory [.]
 ```
@@ -59,7 +61,7 @@ usage: fuzzm [options] <input>
 Several options are intended only for debugging purposes and are so
 indicated.  The most commonly used options are:
 
-* `-target` This option is used to specify the URL of the AMQP server.
+* `-amqp` This option is used to specify the URL of the AMQP server.
   If this option is not provided the fuzzer will not attempt to send 
   test vectors.
 
@@ -91,9 +93,8 @@ node main(length: byte; msg: fsm_msg) returns ();
 
 The 'msg' input abstracts the actual UDP payload into named
 fields that are used in constructing the model.  Note that the
-hierarchical names used here also appear in the relay code below
-(ie: 'length' and msg.buff[2]').
-
+hierarchical names used here also appear as python dictionary keys
+in the relay code below (ie: 'length' and msg.buff[2]').
 
 ```C
 type fsm_msg = struct
@@ -165,107 +166,119 @@ specified in the Lustre file.
 
 An AMQP server is started along with the FuzzM engine when invoked via Docker Compose.
 
+If running FuzzM manually, an AMQP server will need to be available to
+the fuzzer.  [RabbitMQ](https://www.rabbitmq.com/download.html) is an
+example of an open source AMQP server.
+
 ## The Relay
 
-The relay will typically either extend or employ the python [base receiver](../base-receiver/README.md) class
-provided with this distribution. The distribution also provides two example relays, one in each
-of the [fsm](examples/fsm-model/README.md) and [tftp](examples/tftp-model/README.md) directories.
-The examples below are from the fsm [relay](examples/fsm-model/relay.py).
+The relay will typically extend the python [base
+relay](relay-base/README.md) thread class provided with the FuzzM
+distribution. Several utility relays are provided in the [relay
+base](relay-base) directory and two additional relays are provided in
+the examples directory, one in each of the
+[fsm](examples/fsm-model/README.md) and
+[tftp](examples/tftp-model/README.md) directories.  The example below
+is from the fsm [relay](examples/fsm-model/relay.py).
+
+The fsm relay extends the relay base thread class
+`FuzzMRelayBaseThreadClass`.  The relay base class implements methods
+that enable it to synchronize with the fuzzer and start receiving test
+vectors.  Once synchronized, the main job of the user defined relay is to
+reformat each test vector and send them on to the target.  This is
+accomplished by overriding the `processTestVector()` method.  The fsm
+implementation below calls the user defined function `formatVector()` to
+reformat each FuzzM test vector and then transmits the formatted
+vector via UDP to the fsm target URL.
+
+```python
+from relay_base_class import FuzzMRelayBaseThreadClass
+
+class Relay(FuzzMRelayBaseThreadClass):
+    """
+    Extend the relay base thread class FuzzMRelayBaseThreadClass.  We
+    override the processTestVector() method to perform an appropriate
+    action for each new test vector.  In this case we reformat the test
+    vector dictionary into a bytearray appropriate for UDP
+    transmission to the target.
+    """
+    def __init__(self, host, target_ip, target_port):
+        super(Relay, self).__init__(host)
+        self.target_ip = target_ip
+        self.target_port = int(target_port)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    
+    def processTestVector(self,tv):
+        """This method is called on every new test vector"""
+        msg = formatVector(tv)
+        self.sock.sendto(msg, (self.target_ip, self.target_port))
+```
+
+The user defined 'formatVector()' method from the fsm relay transforms
+the test vector (presented as a dictionary) into a bytearray suitable
+for UDP transmission.  Note that the dictionary is indexed by strings
+that reflect the hierarchical names used in the Lustre model
+shown above. Structures and arrays are flattened into their primitive
+integer, Boolean (0 or 1), or rational (N/D) components.  For
+reference, compare the code below to the fsm specification of the
+expected UDP [payload](examples/fsm-model/SPEC.md).
+
+```python
+def formatVector(test_vector):
+    """Reformat test vector dictionary into an appropriate target payload"""
+    length = int(test_vector['length'])
+    if not (0 <= length and length <= 20):
+        print("[Relay] Length field out of bounds [0,20] : " + str(length))
+        print(test_vector)
+        return bytearray(0)
+    
+    msg = bytearray(length)
+    if (0 < length):
+        msg[0] = int(test_vector['msg.magic0'])
+    if (1 < length):
+        msg[1] = int(test_vector['msg.magic1'])
+    if (2 < length):
+        msg[2] = int(test_vector['msg.seq'])
+    if (3 < length):
+        msg[3] = int(test_vector['msg.cmd'])
+    for index in range(0,length-4):
+        name = 'msg.buff[' + str(index) + ']'
+        byte = int(test_vector[name])
+        msg[4 + index] = byte
+    
+    return msg
+```
 
 The interface to the relay will vary with each application of FuzzM.
 Typically, however, the relay will at least need to know the URL of
-the AMQP server.  The fsm relay accepts the IP of the AMQP server and
-the IP/port of the target.
+the AMQP server.  The fsm relay accepts the URL of the AMQP server and
+the URL/port of the target.  It starts the relay thread and then
+simply waits for it to end.
 
 ```python
 def main():
     parser = argparse.ArgumentParser(description="FSM Relay")
-    parser.add_argument('-f', '--fuzz',
+    parser.add_argument('-a', '--amqp',
                         required=True,
-                        help="The address of the fuzzer (AMQP server)")
-    parser.add_argument('-ti', '--target_ip',
+                        help="The address of the AMQP server")
+    parser.add_argument('-t', '--target',
                         required=True,
-                        help="The target IP")
-    parser.add_argument('-tp', '--target_port',
+                        help="The target URL")
+    parser.add_argument('-p', '--port',
                         required=True,
                         help="The target port")
     args = parser.parse_args()
-
-    relay(args.fuzz, args.target_ip, args.target_port)
-```
-
-Note that
-the base class provides methods to initialize and start a receiver thread
-as well as methods to synchronize with the fuzzer.  Once the receiver is
-started, the main job of the relay is to get the next test vector, reformat
-it, and send it to the target.
-
-```python
-def relay(fuzz_ip, target_ip, target_port):
-    ## Initialize the base receiver
-    fuzz_receiver = relay_receiver.RelayReceiver(fuzz_ip)
-    ## Start the receiver
-    fuzz_receiver.start()
-    ## Synchronize with the fuzzer
-    spec = fuzzer_resync(fuzz_receiver)
     
-    ## Forever ..
-    while True:
-        ## Get the next test vector ..
-        msg = nextMessage(fuzz_receiver, spec)
-        ## Reformat it ..
-        pkt = IP(dst=target_ip)/UDP(dport=int(target_port))/Raw(load=bytes(msg))
-        ## Send it to the target.
-        send(pkt)
-```
-
-The 'nextMessage' method from the fsm [relay](examples/fsm-model/relay.py) requests
-a raw test vector from the receiver, transforms it into a dictionary, and
-then re-formats the data as a UDP packet payload.  For reference, compare the
-code below to the fsm specification of the expected UDP [payload](examples/fsm-model/SPEC.md).
-Note that the dictionary
-is indexed by strings that reflect the hierarchical names used in the Lustre model
-above. Structures and arrays are flattened into their primitive integer, Boolean (0 or 1), or
-rational (N/D) components.
-
-```python
-def nextMessage(fuzz_receiver, spec):
-    msg = bytearray(0)
-    while True:
-        ## Get a vector from the fuzzer ..
-        raw_test_vector = fuzz_receiver.get_next_test_vector()
-        ## Represent it as a dictionary ..
-        test_vector = FuzzMRatSignal(raw_test_vector, spec)
-        
-        # print("[Relay] vector = " + str(test_vector))
-        
-        ## Reformat dictionary into appropriate target payload ..
-        try:
-            length = int(test_vector['length'])
-            if not (0 <= length and length < 32):
-                print("[Relay] Length field out of bounds [0,32] : " + str(length))
-                print(test_vector)
-                continue
-            msg = bytearray(length)
-            if (0 < length):
-                msg[0] = int(test_vector['msg.magic0'])
-            if (1 < length):
-                msg[1] = int(test_vector['msg.magic1'])
-            if (2 < length):
-                msg[2] = int(test_vector['msg.seq'])
-            if (3 < length):
-                msg[3] = int(test_vector['msg.cmd'])
-            for index in range(0,length-4):
-                name = 'msg.buff[' + str(index) + ']'
-                byte = int(test_vector[name])
-                msg[4 + index] = byte
-        except KeyError:
-            print("[Relay] Key Error Accessing Message :")
-            print(test_vector)
-            continue
-        break
-    return msg
-
+    ## Initialize the fuzzer relay
+    fuzz_relay = Relay(args.fuzz, args.target_ip, args.target_port)
+    ## Start the relay
+    fuzz_relay.start()
+    try:
+        fuzz_relay.join()
+    except KeyboardInterrupt:
+        fuzz_relay.stop()
+        fuzz_relay.join()
+    return 0
 ```
 
 ## Operation
@@ -291,4 +304,6 @@ on the graph in the image below.
 
 To terminate the fuzzing session, type:
 
-`docker-compose down`
+```
+docker-compose down
+```
