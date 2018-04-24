@@ -12,11 +12,11 @@ services:
     links:
     - rabbit
     volumes:
-    - .:/root/model
+    - ../fuzzm/fuzzm/src/test:/root/model
     entrypoint:
     - /bin/sh
     - -c
-    - "wait-for-it.sh -t 30 rabbit:5672 -- fuzzm --amqp rabbit /root/model/input.lus"
+    - "wait-for-it.sh -t 60 rabbit:5672 -- fuzzm --amqp rabbit /root/model/gradient.lus"
   rabbit:
     image: "rabbitmq:3-management"
     hostname: "rabbit"
@@ -31,9 +31,7 @@ services:
     image: printrelay:latest
     links:
     - rabbit
-    volumes:
-    - .:/root/print
     entrypoint:
     - /bin/sh
     - -c
-    - "wait-for-it.sh -t 30 rabbit:5672 -- python3 print_relay.py -amqp rabbit"
+    - "wait-for-it.sh -t 60 rabbit:5672 -- python3 print_relay.py --amqp rabbit"

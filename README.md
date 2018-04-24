@@ -4,7 +4,7 @@ FuzzM (Fuzzing with Models) is a gray box
 model-based fuzzing framework that employs
 [Lustre](https://en.wikipedia.org/wiki/Lustre_(programming_language))
 as a modeling and specification language and leverages the
-[JKind](https://github.com/agacek/jkindmodel) model checker as a constraint
+[JKind](https://github.com/agacek/jkind) model checker as a constraint
 solver.
 
 ## Overview

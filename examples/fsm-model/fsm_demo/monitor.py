@@ -9,7 +9,7 @@ from threading import Thread
 from time import sleep
 
 PROCESS_NAME = 'fsm'
-PROCESS_COMMAND = './start.sh'
+PROCESS_COMMAND = './run.sh'
 
 
 ###############################################################################

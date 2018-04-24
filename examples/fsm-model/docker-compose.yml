@@ -15,12 +15,12 @@ services:
     entrypoint:
     - /bin/sh
     - -c
-    - "wait-for-it.sh rabbit:5672 -- ./fuzz-fsm.sh"
+    - "wait-for-it.sh -t 60 rabbit:5672 -- ./fuzz-fsm.sh"
   rabbit:
     image: "rabbitmq:3-management"
     hostname: "rabbit"
     ports:
-    - "15672:15672"
+    - "15672"
     expose:
     - "5672"
   fsmrelay:
@@ -34,13 +34,12 @@ services:
     - rabbit
     - fsm
     volumes:
-    - ".:/root/fsm"
     - "../../relay-base:/root/relay-base"
     working_dir: "/root/fsm"
     entrypoint:
     - /bin/sh
     - -c
-    - "wait-for-it.sh rabbit:5672 -- ./relay-fsm.sh"
+    - "wait-for-it.sh -t 60 rabbit:5672 -- ./relay-fsm.sh"
   fsm:
     image: fsm:latest
     build:

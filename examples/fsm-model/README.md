@@ -9,8 +9,7 @@ A c++ implementation of the FSM is [here](fsm_demo/fsm.cpp)
 A Lustre model, based on the FSM spec, is [here](fsm.lus).  Note that, because FuzzM is memory-less, 
 we use uninterpreted functions to represent the unknown initial state of the FSM.
 
-A relay for the FSM is [here](relay.py).  Note that this relay uses
-[scapy](https://github.com/secdev/scapy) to format and send UDP packets.
+A relay for the FSM is [here](relay.py).
 
 ## Running The Example
 
@@ -30,4 +29,4 @@ docker-compose down
 
 ## Fuzz-Off
 
-See `fsm_demo/README.md` for directions to run Fuzz-Off
+See this [README](fsm_demo/README.md) for directions on running the Fuzz-Off

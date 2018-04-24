@@ -15,12 +15,12 @@ services:
     entrypoint:
     - /bin/sh
     - -c
-    - "umask 000 && wait-for-it.sh rabbit:5672 -- ./fuzz-tftp.sh"
+    - "umask 000 && wait-for-it.sh -t 60 rabbit:5672 -- ./fuzz-tftp.sh"
   rabbit:
     image: "rabbitmq:3-management"
     hostname: "rabbit"
     ports:
-    - "15672:15672"
+    - "15672"
     expose:
     - "5672"
   tftprelay:
@@ -34,12 +34,11 @@ services:
     - rabbit
     - tftp
     volumes:
-    - ".:/root/tftp"
     - "../../relay-base:/root/relay-base"
     entrypoint:
     - /bin/sh
     - -c
-    - "umask 000 && chmod a+rw *.py && chmod a+rw /root/relay-base/*.py && wait-for-it.sh rabbit:5672 -- python3 relay.py --target tftp --amqp rabbit"
+    - "wait-for-it.sh -t 60 rabbit:5672 -- python3 relay.py --target tftp --amqp rabbit"
   tftp:
     image: pghalliday/tftp
     expose:
