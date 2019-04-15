@@ -346,7 +346,7 @@ class FuzzMAMQPInterface(FuzzMInterface):
         self.channel = self.connection.channel()
         self.channel.exchange_declare(
             exchange=self.exchange_name, exchange_type='direct')
-        result = self.channel.queue_declare(exclusive=True)
+        result = self.channel.queue_declare(queue='channel_queue',exclusive=True)
         self.queue_name = result.method.queue
         self.channel.queue_bind(exchange=self.exchange_name,
                                  queue=self.queue_name,
@@ -358,8 +358,8 @@ class FuzzMAMQPInterface(FuzzMInterface):
                                  queue=self.queue_name,
                                  routing_key=str(FuzzMMsgTypes.CONFIG_SPEC_MSG_TYPE))
         
-        self.channel.basic_consume(self.amqp_callback, queue=self.queue_name,
-                                    no_ack=True)
+        self.channel.basic_consume(on_message_callback=self.amqp_callback, queue=self.queue_name)
+                                   
     
     def amqp_callback(self, channel, method, properties, body):
         keybytes = (method.routing_key + " ").encode('utf-8')

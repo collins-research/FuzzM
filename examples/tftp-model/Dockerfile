@@ -1,4 +1,4 @@
-FROM python:3.4.3
+FROM python:3
 
 ARG proxy
 
@@ -9,7 +9,7 @@ RUN \
    pip3 install --proxy ${proxy} \
    pika \
    pyqtgraph \
-   scapy-python3
+   scapy==2.4.3rc1
 
 RUN \
    apt-get update && \
